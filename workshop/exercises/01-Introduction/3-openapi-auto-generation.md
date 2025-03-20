@@ -473,4 +473,4 @@ By leveraging this approach across all city services, you create a cohesive ecos
 
 Now that you've learned about OpenAPI code generation, you can apply this technique to all your city services, creating a robust and maintainable ecosystem of services that work together seamlessly.
 
-Ready to move on? Proceed to the next exercise, where we'll explore how to connect multiple city services together using the API-first approach: [Service Implementation - Introductoin](../02-1-introduction) 
+Ready to move on? Proceed to the next exercise, where we'll explore how to connect multiple city services together using the API-first approach: [Service Implementation - Introduction](../../02-1-introduction) 

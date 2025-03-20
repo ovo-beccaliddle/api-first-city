@@ -65,4 +65,4 @@ services/your-service-name/
 
 Let's do this! We'll break this down into manageable steps, starting with exploring the sample service we've provided.
 
-Head over to the next section: [Setting Up Your Service Structure](./02-2-setup) 
+Head over to the next section: [Setting Up Your Service Structure](../02-2-setup) 

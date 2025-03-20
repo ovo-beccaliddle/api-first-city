@@ -315,4 +315,4 @@ export interface PowerPlant {
 
 Now that you've defined your data models, it's time to move on to the repository layer, which will handle data storage and retrieval. Let's create some repositories for your resources.
 
-Head over to [Building Your Repository Layer](./02-4-repositories) 
+Head over to [Building Your Repository Layer](../02-4-repositories) 

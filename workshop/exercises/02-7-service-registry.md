@@ -534,4 +534,4 @@ Congratulations! Your service is now implemented and integrated with the city se
 
 In the next exercise, we'll explore how to implement more advanced communication patterns between services, such as event-based communication, circuit breakers, and more.
 
-Head over to [Testing Your Implementation](./02-8-testing) 
+Head over to [Testing Your Implementation](../02-8-testing) 

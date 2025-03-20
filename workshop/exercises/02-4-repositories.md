@@ -462,4 +462,4 @@ export const PatrolRepository = {
 
 You've now created the repository layer for your service, which handles all data operations. Next, let's build the service layer, which will contain your business logic.
 
-Head over to [Creating Your Service Layer](./02-5-services) 
+Head over to [Creating Your Service Layer](../02-5-services) 

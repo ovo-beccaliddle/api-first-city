@@ -853,4 +853,4 @@ Congratulations! You've now implemented all the main components of your city ser
 
 Now, let's connect your service to the city service registry so that other services can discover and interact with it.
 
-Head over to [Registering Your Service](./02-7-service-registry) 
+Head over to [Registering Your Service](../02-7-service-registry) 

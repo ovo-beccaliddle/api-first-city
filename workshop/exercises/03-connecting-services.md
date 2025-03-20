@@ -549,9 +549,3 @@ If you're speeding ahead:
 - [Axios Documentation](https://axios-http.com/docs/intro)
 - [Pub/Sub Pattern](https://cloud.google.com/pubsub/docs/overview)
 - [Circuit Breaker Pattern](https://martinfowler.com/bliki/CircuitBreaker.html)
-
-## What's Next?
-
-In the next exercise, we'll explore advanced topics like versioning APIs, handling security, and monitoring your services in production.
-
-Ready to continue? Head to [Exercise 4: Advanced API Features](./04-advanced-api-features) 

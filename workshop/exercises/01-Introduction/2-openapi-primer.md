@@ -427,3 +427,5 @@ In our City Services platform, OpenAPI isn't just a documentation format—it's 
 - [Swagger Tools](https://swagger.io/tools/) - A collection of tools for working with OpenAPI
 - [OpenAPI Map](https://openapi-map.apihandyman.io/) - Visual representation of the OpenAPI structure
 - [OpenAPI Generator](https://openapi-generator.tech/) - Tool for generating code from OpenAPI specs 
+
+Ready to move on? How can we use [OpenAPI to auto generate helpful code?](../3-openapi-auto-generation)

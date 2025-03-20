@@ -566,4 +566,4 @@ EventBus.subscribe('CallCompleted', async (data) => {
 
 You've now created the service layer, which contains the business logic for your application. Next, let's implement the controllers, which will handle HTTP requests and call the appropriate service methods.
 
-Head over to [Implementing Your Controllers](./02-6-controllers) 
+Head over to [Implementing Your Controllers](../02-6-controllers) 

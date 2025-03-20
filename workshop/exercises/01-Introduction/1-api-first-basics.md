@@ -107,4 +107,4 @@ If you're racing ahead:
 
 In the next exercise, you'll implement your service based on the API contract you just created. You'll see how the API-first approach makes implementation straightforward and ensures you deliver exactly what you promised.
 
-Ready to move on? Head to [Exercise 2: Implementing Your City Service](../../02-1-introduction)
+Ready to move on? Head to [What is OpenAPI?](../2-openapi-primer)

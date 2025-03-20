@@ -189,4 +189,4 @@ Identify your main resources and the operations you'll need to implement for eac
 
 Now that your project structure is set up, you're ready to start implementing your service's specific functionality. In the next section, we'll implement the data models that match your API schemas.
 
-Ready to continue? Head over to [Implementing Your Models](./02-3-models) 
+Ready to continue? Head over to [Implementing Your Models](../02-3-models) 
