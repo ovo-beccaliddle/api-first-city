@@ -107,14 +107,14 @@ export class ResourceService {
     }
   }
 
-  // /**
-  //  * Seeds the repository with sample data for development/testing purposes.
-  //  * 
-  //  * @async
-  //  * @param {number} [count=10] - The number of sample resources to create
-  //  * @returns {Promise<void>} A promise that resolves when seeding is complete
-  //  */
-  // async seedData(count = 10): Promise<void> {
-  //   await this.repository.seed(count);
-  // }
+  /**
+   * Seeds the repository with sample data for development/testing purposes.
+   * 
+   * @async
+   * @param {number} [count=10] - The number of sample resources to create
+   * @returns {Promise<void>} A promise that resolves when seeding is complete
+   */
+  async seedData(count = 10): Promise<void> {
+    await this.repository.seed(count);
+  }
 }
