@@ -8,6 +8,17 @@ In your root, run `yarn serve:workshop`
 
 Navigate to <http://localhost:8080/>
 
+## RUN DATABSE
+
+```bash
+
+docker run -d \        --name some-postgres \
+        -p 5433:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=sample_service  \
+        -e PGDATA=/var/lib/postgresql/data/pgdata \
+        postgres
+
+        ```
+
 ## Project Structure
 
 The project follows a monorepo structure with Turborepo:

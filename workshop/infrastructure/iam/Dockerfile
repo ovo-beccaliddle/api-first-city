@@ -7,13 +7,15 @@ WORKDIR /app
 
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install
+RUN corepack enable
+# RUN yarn global add turbo
+RUN yarn set version 4.7.0 && yarn install
 
 # Copy application code
 COPY . .
 
 # Build TypeScript
-RUN npm run build
+RUN yarn install && yarn run build
 
 # Set environment variables
 ENV NODE_ENV=production

@@ -13,7 +13,7 @@ RUN npm install
 COPY . .
 
 # Build TypeScript
-RUN npm run build
+RUN yarn set version 4.7.0 && yarn install && yarn run build
 
 # Set environment variables
 ENV NODE_ENV=production
