@@ -66,7 +66,7 @@ services:
       sample-service-db:
         condition: service_healthy
     networks:
-      - frontend
+      - frontend-sample
       - default
     deploy:
       resources:
@@ -80,9 +80,8 @@ volumes:
     name: sample_service_db_data
 
 networks:
-  frontend:
-    name: frontend
-    external: true
-  default:
-    name: city-services-network
-    external: true 
+  frontend-sample:
+    name: frontend-sample
+  # default:
+  #   name: city-services-network
+  #   external: true 

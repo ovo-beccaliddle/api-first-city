@@ -4,10 +4,11 @@ WORKDIR /app
 
 # Copy package files and install dependencies
 COPY package.json tsconfig.json ./
-RUN yarn install
+
+RUN corepack enable && yarn set version 4.7.0 && yarn install
 
 # Copy application code
-COPY src/ ./src
+COPY ./infrastructure/service-registry/src/ ./src
 
 # Build TypeScript
 RUN yarn build

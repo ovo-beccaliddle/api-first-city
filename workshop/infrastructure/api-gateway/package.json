@@ -1,6 +1,7 @@
 {
   "name": "@city-services/api-gateway",
   "version": "1.0.0",
+  "packageManager": "yarn@4.7.0",
   "description": "API Gateway service for city services",
   "scripts": {
     "build": "echo 'API Gateway is Docker-based, no build output required' && mkdir -p dist && touch dist/.turbo-cache-marker",

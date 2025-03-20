@@ -4,6 +4,7 @@
   "description": "Common utilities for City Services API-first workshop",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "packageManager": "yarn@4.7.0",
   "scripts": {
     "build": "tsc",
     "test": "vitest run",

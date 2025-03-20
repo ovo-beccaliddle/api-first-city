@@ -4,7 +4,7 @@
   "description": "Identity and Access Management service for city services",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json && mkdir -p dist && touch dist/.turbo-cache-marker",
+    "build": "tsc -p tsconfig.json",
     "start": "node ../../scripts/load-env.js node dist/server.js",
     "dev": "node ../../scripts/load-env.js tsx --watch src/server.ts",
     "test": "vitest run",
@@ -14,8 +14,9 @@
     "lint": "eslint . --ext .ts",
     "clean": "rimraf dist"
   },
+  "packageManager": "yarn@4.7.0",
   "dependencies": {
-    "@city-services/common": "workspace:*",
+    "@city-services/common": "../../common",
     "dotenv": "^16.4.7",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0"

@@ -4,6 +4,7 @@
   "description": "Event Bus for city services",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "packageManager": "yarn@4.7.0",
   "scripts": {
     "build": "tsc -p tsconfig.json && mkdir -p dist && touch dist/.turbo-cache-marker",
     "start": "node ../../scripts/load-env.js node dist/setup.js",

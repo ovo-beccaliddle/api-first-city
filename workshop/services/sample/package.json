@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Sample API-first service implementation",
   "main": "dist/index.js",
+  "packageManager": "yarn@4.7.0",
   "scripts": {
     "build": "yarn generate:api && tsc -p tsconfig.json && mkdir -p dist && touch dist/.turbo-cache-marker",
     "start": "node ../../scripts/load-env.js node dist/index.js",
