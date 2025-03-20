@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Include all infrastructure and service compose files
 include:
   - ../infrastructure/api-gateway/docker-compose.yml

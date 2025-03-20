@@ -3970,6 +3970,7 @@ __metadata:
   resolution: "api-first-city-services-monorepo@workspace:."
   dependencies:
     "@11ty/eleventy": "npm:^3.0.0"
+    concurrently: "npm:^9.1.2"
     prettier: "npm:^3.5.3"
     turbo: "npm:^2.4.4"
   languageName: unknown

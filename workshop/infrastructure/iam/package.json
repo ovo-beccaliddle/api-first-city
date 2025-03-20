@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Identity and Access Management service for city services",
   "main": "dist/index.js",
-  "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json && mkdir -p dist && touch dist/.turbo-cache-marker",
     "start": "node ../../scripts/load-env.js node dist/server.js",

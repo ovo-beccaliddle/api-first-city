@@ -1,4 +1,4 @@
 {
   "is_task_list_visible": true,
-  "active_task": "@city-services/iam#build"
+  "active_task": "@city-services/service-registry#dev"
 }
