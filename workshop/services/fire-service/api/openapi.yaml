@@ -1,0 +1,217 @@
+openapi: 3.1.0
+info:
+  title: Fire Service API
+  version: 1.0.0
+  description: Fire Service API for Enterprise Security's API
+servers:
+  - url: http://localhost:3002
+    description: Direct service access (development)
+  - url: http://localhost:8082/fire-service
+    description: API Gateway path
+paths:
+  /rescue-cat:
+    post:
+      summary: Rescue a cat stuck in a tree or other location
+      operationId: rescueCat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                location:
+                  type: string
+                  description: "The location of the cat in need of rescue"
+                urgency:
+                  type: string
+                  enum: [low, medium, high]
+                  description: "The urgency level of the rescue"
+      responses:
+        '200':
+          description: "Cat rescue initiated successfully"
+        '400':
+          description: "Invalid request data"
+  /put-out-fire:
+    post:
+      summary: Dispatch a team to put out a fire
+      operationId: putOutFire
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                location:
+                  type: string
+                  description: "The location of the fire"
+                severity:
+                  type: string
+                  enum: [small, medium, large]
+                  description: "The severity of the fire"
+      responses:
+        '200':
+          description: "Firefighting team dispatched successfully"
+        '400':
+          description: "Invalid request data"
+  /health:
+    get:
+      summary: Health check
+      description: Check the health status of the service
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service health information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, degraded, down]
+                  version:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+                required:
+                  - status
+                  - timestamp
+      security: []  # No authentication required for health check
+components:
+  schemas:
+    ResourceStatus:
+      type: string
+      description: Status of a resource
+      enum: [active, inactive, pending, archived]
+
+    Resource:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the resource
+        name:
+          type: string
+          description: Name of the resource
+        description:
+          type: string
+          description: Detailed description of the resource
+        status:
+          $ref: '#/components/schemas/ResourceStatus'
+          description: Current status of the resource
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags associated with the resource
+        createdAt:
+          type: string
+          format: date-time
+          description: When the resource was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the resource was last updated
+      required:
+        - id
+        - name
+        - status
+        - createdAt
+        - updatedAt
+
+    ResourceCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the resource
+        description:
+          type: string
+          description: Detailed description of the resource
+        status:
+          $ref: '#/components/schemas/ResourceStatus'
+          description: Initial status of the resource
+          default: active
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags associated with the resource
+      required:
+        - name
+
+    ResourceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Updated name of the resource
+        description:
+          type: string
+          description: Updated description of the resource
+        status:
+          $ref: '#/components/schemas/ResourceStatus'
+          description: Updated status of the resource
+        tags:
+          type: array
+          items:
+            type: string
+          description: Updated tags for the resource
+
+    ResourceList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resource'
+          description: List of resources
+        total:
+          type: number
+          description: Total number of resources matching the query
+        page:
+          type: number
+          description: Current page number
+        page_size:
+          type: number
+          description: Number of items per page
+      required:
+        - items
+        - total
+        - page
+        - page_size
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Error code
+            message:
+              type: string
+              description: Human-readable error message
+            details:
+              type: object
+              additionalProperties: true
+              description: Additional error details
+          required:
+            - code
+            - message
+      required:
+        - error
+
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: http://localhost:8082/oauth/token
+          scopes:
+            'read:fire-service': Read access to fire-service service resources
+            'write:fire-service': Write access to fire-service service resources 
