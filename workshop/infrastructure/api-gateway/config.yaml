@@ -1,0 +1,153 @@
+# Gravitee API Gateway configuration for City Services
+
+# Repository configurations for PostgreSQL
+management:
+  type: jdbc
+  jdbc:
+    url: jdbc:postgresql://postgres:5432/gravitee
+    username: postgres
+    password: postgres
+    pool:
+      autoCommit: true
+      connectionTimeout: 10000
+      idleTimeout: 600000
+      maxLifetime: 1800000
+      minIdle: 10
+      maxPoolSize: 10
+
+jwt:
+  secret: cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3ecf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3ecf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3ecf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e
+  expire-after: 172800 # 2 days
+  cookie-secure: true
+
+security: 
+  providers: 
+    - type: oauth2
+      configuration:
+        issuer: http://iam-service:3000
+        jwks-uri: http://iam-service:3000/.well-known/jwks.json 
+    - type: memory
+      # allow search results to display the user email. Be careful, It may be contrary to the user privacy.
+#      allow-email-in-search-results: true
+      # password encoding/hashing algorithm. One of:
+      # - bcrypt : passwords are hashed with bcrypt (supports only $2a$ algorithm)
+      # - none : passwords are not hashed/encrypted
+      # default value is bcrypt
+      password-encoding-algo: bcrypt
+      users:
+        - user:
+          username: user
+          #firstname:
+          #lastname:
+          # Passwords are encoded using BCrypt
+          # Password value: password
+          password: $2a$10$9kjw/SH9gucCId3Lnt6EmuFreUAcXSZgpvAYuW2ISv7hSOhHRH1AO
+          roles: ORGANIZATION:USER,ENVIRONMENT:USER
+          # Useful to receive notifications
+          #email:
+        - user:
+          username: admin
+          #firstname:
+          #lastname:
+          # Password value: admin
+          password: $2a$10$Ihk05VSds5rUSgMdsMVi9OKMIx2yUvMz7y9VP3rJmQeizZLrhLMyq
+          roles: ORGANIZATION:ADMIN,ENVIRONMENT:ADMIN
+          #email:
+        - user:
+          username: api1
+          #firstname:
+          #lastname:
+          # Password value: api1
+          password: $2a$10$iXdXO4wAYdhx2LOwijsp7.PsoAZQ05zEdHxbriIYCbtyo.y32LTji
+          # You can declare multiple roles using comma separator
+          roles: ORGANIZATION:USER,ENVIRONMENT:API_PUBLISHER
+          #email:
+        - user:
+          username: application1
+          #firstname:
+          #lastname:
+          # Password value: application1
+          password: $2a$10$2gtKPYRB9zaVaPcn5RBx/.3T.7SeZoDGs9GKqbo9G64fKyXFR1He.
+          roles: ORGANIZATION:USER,ENVIRONMENT:USER
+          #email:
+    # Enable authentication using internal repository
+    - type: gravitee
+
+reporters:
+  elasticsearch:
+    endpoints:
+      - http://elasticsearch:9200
+
+
+analytics:
+  type: elasticsearch
+  elasticsearch:
+    endpoints:
+      - http://elasticsearch:9200/
+
+ratelimit:
+  type: jdbc
+  jdbc:
+    url: jdbc:postgresql://postgres:5432/gravitee
+    username: postgres
+    password: postgres
+    pool:
+      autoCommit: true
+      connectionTimeout: 10000
+      idleTimeout: 600000
+      maxLifetime: 1800000
+      minIdle: 10
+      maxPoolSize: 10
+
+# Commented out API definitions
+# apis:
+#   # Sample service API definition
+#   - name: sample-service
+#     context-path: /sample
+#     target: http://sample-service:3000
+#     policies:
+#       - name: rate-limiting
+#         configuration:
+#           rate: 100
+#           timeUnit: MINUTE
+#       - name: oauth2
+#         configuration:
+#           authorizationServer: http://iam-service:3000
+#           clientId: sample-service
+#           scopes:
+#             - read:sample
+#             - write:sample
+#     
+#   # Emergency Services APIs
+#   - name: police-service
+#     context-path: /emergency/police
+#     target: http://police-service:3000
+#     policies:
+#       - name: rate-limiting
+#         configuration:
+#           rate: 50
+#           timeUnit: MINUTE
+#       - name: oauth2
+#         configuration:
+#           authorizationServer: http://iam-service:3000
+#           clientId: emergency-police-service
+#           scopes:
+#             - read:incidents
+#             - write:incidents
+#             - read:emergency
+
+# Keeping only the essential gateway settings
+gateway:
+  http:
+    port: 8000
+  admin:
+    enabled: true
+    port: 8001
+  security:
+    ssl:
+      enabled: false
+  logging:
+    level: INFO
+
+# Commented out authentication settings
+  

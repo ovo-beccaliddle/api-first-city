@@ -1,0 +1,28 @@
+{
+  "name": "@city-services/event-bus",
+  "version": "1.0.0",
+  "description": "Event Bus for city services",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && mkdir -p dist && touch dist/.turbo-cache-marker",
+    "start": "node ../../scripts/load-env.js node dist/setup.js",
+    "dev": "docker compose -f docker-compose.yml up",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint . --ext .ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@google-cloud/pubsub": "^4.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.11",
+    "@vitest/coverage-v8": "^1.2.0",
+    "rimraf": "^4.4.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
+  }
+}

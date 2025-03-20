@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  iam-service:
+    image: city-services/infrastructure-iam
+    build:
+      context: ../../
+      dockerfile: infrastructure/iam/Dockerfile
+      args:
+        - PACKAGE_PATH=infrastructure/iam
+    ports:
+      - "${EXTERNAL_PORT:-3001}:${PORT:-3000}"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${PORT:-3000}
+      - JWT_SECRET=${JWT_SECRET:-workshop-secret-key}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-3600}
+      - TOKEN_ISSUER=${TOKEN_ISSUER:-city-services-iam}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - ./src:/app/infrastructure/iam/src
+      - ../../common:/app/common
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:${PORT:-3000}/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s 
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.3'

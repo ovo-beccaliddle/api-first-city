@@ -1,0 +1,61 @@
+<h1>API First City Services</h1>
+<p>This is a monorepo for the API First City Services Workshop, powered by Turborepo for efficient builds and workflows.</p>
+<h2>Viewing the course content</h2>
+<p>In your root, run <code>yarn serve:workshop</code></p>
+<p>Navigate to <a href="http://localhost:8080/">http://localhost:8080/</a></p>
+<h2>Project Structure</h2>
+<p>The project follows a monorepo structure with Turborepo:</p>
+<pre><code>api-first-city/
+├── turbo.json                # Turborepo configuration
+├── package.json              # Root package.json
+├── TODO.md                   # Implementation todo list
+├── workshop/                 # Main workshop folder
+│   ├── common/               # Shared code across all services
+│   ├── infrastructure/       # Core infrastructure services
+│   │   ├── api-gateway/      # API Gateway (Gravitee)
+│   │   ├── iam/              # Identity and Access Management
+│   │   ├── service-registry/ # Service discovery
+│   │   └── event-bus/        # Event bus setup
+│   ├── services/             # City services
+│   │   ├── sample/           # Complete sample service
+│   │   └── templates/        # Templates for other services
+│   ├── deployment/           # Deployment configuration
+│   │   ├── docker-compose.yml# Local development setup
+│   │   ├── kubernetes/       # K8s deployment manifests
+│   │   └── scripts/          # Setup and utility scripts
+│   └── exercises/            # Workshop exercises
+</code></pre>
+<h2>Getting Started</h2>
+<h3>Prerequisites</h3>
+<ul>
+<li>Node.js (v20+)</li>
+<li>Yarn (v1.22+)</li>
+<li>Docker &amp; Docker Compose</li>
+<li>kubectl (for Kubernetes deployment)</li>
+<li>k3d (for local Kubernetes)</li>
+</ul>
+<h3>Setup</h3>
+<p>Run the following scripts to prepare the workshop environment:</p>
+<pre><code class="language-bash">yarn # Installs dependencies
+yarn dev # Runs dev using turbo
+</code></pre>
+<p>This script will:</p>
+<ol>
+<li>Check prerequisites</li>
+<li>Install dependencies</li>
+<li>Build common packages</li>
+<li>Validate API specifications</li>
+<li>Build Docker images</li>
+</ol>
+<h2>Available Scripts</h2>
+<p>Thanks to Turborepo, you can run various commands across all packages:</p>
+<ul>
+<li><code>yarn build</code> - Build all packages</li>
+<li><code>yarn dev</code> - Start development mode for all services</li>
+<li><code>yarn lint</code> - Lint all packages</li>
+<li><code>yarn test</code> - Run tests for all packages</li>
+<li><code>yarn clean</code> - Clean build artifacts</li>
+<li><code>yarn start</code> - Start all services in production mode</li>
+<li><code>yarn deploy</code> - Build, test, and deploy all services</li>
+<li><code>yarn run-all</code> - Run all core services concurrently in development mode</li>
+</ul>

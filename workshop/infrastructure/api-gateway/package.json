@@ -1,0 +1,13 @@
+{
+  "name": "@city-services/api-gateway",
+  "version": "1.0.0",
+  "description": "API Gateway service for city services",
+  "scripts": {
+    "build": "echo 'API Gateway is Docker-based, no build output required' && mkdir -p dist && touch dist/.turbo-cache-marker",
+    "start": "./scripts/download-jdbc-driver.sh && docker compose up -d --build",
+    "dev": "./scripts/download-jdbc-driver.sh && docker compose up -d --build",
+    "lint": "echo 'No linting required'",
+    "test": "echo 'No tests required'",
+    "clean": "echo 'No clean step required'"
+  }
+}

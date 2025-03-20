@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        code {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 0.2rem 0.4rem;
+        }
+        nav {
+            background-color: #f6f8fa;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 3px;
+        }
+        nav a {
+            margin-right: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+    </nav>
+    <main>
+        <h1>Exercise 1: Welcome to API-First Development in City Services!</h1>
+<p>Hey there, future city service developer! 👋</p>
+<p>In this first exercise, we're going to dive into the exciting world of API-first development using our City Services project. Whether you're building police dispatch systems, power plants, or traffic cameras, the principles we cover here will help you create robust, well-designed APIs.</p>
+<h2>What You'll Learn</h2>
+<p>By the time you finish this exercise, you'll be able to:</p>
+<ol>
+<li>Understand why API-first development is awesome (and why we use it)</li>
+<li>Create your own API specification using OpenAPI 3.0</li>
+<li>Make sure your API spec is valid and well-formed</li>
+<li>Generate slick documentation that other teams can actually use</li>
+</ol>
+<h2>What's This API-First Thing Anyway?</h2>
+<p>API-first development is an approach where we design and agree on the API contract <em>before</em> writing any code. It's like having architectural plans before building a house—you wouldn't just start laying bricks, would you?</p>
+<p>Here's why it's cool:</p>
+<ul>
+<li><strong>Work in parallel</strong>: While you're building your service, product teams can already start designing UIs against your API</li>
+<li><strong>Clear contracts</strong>: Everyone knows exactly what data is going in and out</li>
+<li><strong>Consistency</strong>: All city services follow the same patterns (no weird surprises!)</li>
+<li><strong>Documentation that doesn't suck</strong>: Your API docs are always up-to-date</li>
+<li><strong>Cool tools</strong>: Generate code, tests, and mocks right from your spec</li>
+</ul>
+<h2>The City Services Project</h2>
+<p>Our city is full of different services that need to talk to each other. Imagine:</p>
+<ul>
+<li>An ambulance needs to find the nearest hospital with available beds</li>
+<li>A power plant needs to report energy usage to financial reporting</li>
+<li>Traffic cameras need to notify the fines system when someone runs a red light</li>
+</ul>
+<p>All these services will have their own APIs, but they need to communicate through a central registry so they can find each other.</p>
+<h2>Let's Get Started!</h2>
+<h3>1. Check Out the Sample Service</h3>
+<p>We've built a sample service to show you how things work. Take a look:</p>
+<ol>
+<li>Open the sample service API specification at <code>services/sample/api/openapi.yaml</code></li>
+<li>Look at the endpoints, request/response structures, and security settings</li>
+<li>Notice how the API is organized around resources and actions</li>
+</ol>
+<p>The sample service is your friend! It shows our standard patterns and will help you implement your own service.</p>
+<h3>2. Make Sure the Sample API Is Valid</h3>
+<p>Before using the sample as a reference, let's make sure it's valid:</p>
+<pre><code class="language-bash">cd services/sample
+npm run validate-api
+</code></pre>
+<p>If you see any errors, fix them. This is a good way to learn the OpenAPI format.</p>
+<h3>3. Create Your Own API Specification</h3>
+<p>Now it's your turn! Based on the service your team has been assigned (Police, Fire, Power Plant, Traffic Cameras, etc.), create an API specification:</p>
+<ol>
+<li>Create a directory for your service: <code>services/your-service-name</code></li>
+<li>Create an API spec file: <code>services/your-service-name/api/openapi.yaml</code></li>
+<li>Define your key resources and endpoints based on the service description</li>
+<li>Include request parameters, response schemas, and examples</li>
+<li>Add security requirements (we use OAuth2)</li>
+<li>Validate your specification</li>
+</ol>
+<p>Need inspiration? Look at your service description in the Product document to see what resources and actions you need to support.</p>
+<h3>4. Generate Documentation and Share It</h3>
+<p>Once your API spec is ready, generate documentation to share with your team:</p>
+<pre><code class="language-bash">npm run generate-docs
+</code></pre>
+<p>This will create beautiful, interactive documentation that shows all your endpoints, data models, and examples.</p>
+<h2>Bonus Challenges</h2>
+<p>If you're racing ahead:</p>
+<ol>
+<li>Add detailed examples that show how your API works in real scenarios</li>
+<li>Define error responses for different failure scenarios</li>
+<li>Add schema validation rules like minimum/maximum values</li>
+<li>Set up a mock server so others can test against your API without real implementation:<pre><code class="language-bash">npm run mock-api
+</code></pre>
+</li>
+</ol>
+<h2>Helpful Resources</h2>
+<ul>
+<li>Check out the OpenAPI docs: https://swagger.io/specification/</li>
+<li>Play with the Swagger Editor: https://editor.swagger.io/</li>
+<li>Ask questions! We're all learning together.</li>
+</ul>
+<h2>What's Next?</h2>
+<p>In the next exercise, you'll implement your service based on the API contract you just created. You'll see how the API-first approach makes implementation straightforward and ensures you deliver exactly what you promised.</p>
+<p>Ready to move on? Head to <a href="../../02-1-introduction">Exercise 2: Implementing Your City Service</a></p>
+
+    </main>
+</body>
+</html>

@@ -1,0 +1,2386 @@
+<h1>API First Workshop: City Services Walking Skeleton</h1>
+<h2>Overview</h2>
+<p>This document outlines the implementation plan for a walking skeleton of the &quot;API First&quot; workshop using a City Services metaphor. A walking skeleton is a minimal implementation that demonstrates the core architecture and infrastructure without implementing all the business logic.</p>
+<p>The implementation follows an API-first approach where the API contract is defined before implementation, allowing teams to work independently while ensuring interoperability.</p>
+<h2>Project Structure</h2>
+<p>The project will follow the structure outlined in the design document:</p>
+<pre><code>city-services/
+├── infrastructure/
+│   ├── api-gateway/          # Gravitee configuration and setup
+│   ├── service-registry/     # Service discovery
+│   └── iam/                  # OAuth IAM service
+├── common/
+│   ├── models/               # Shared data models
+│   ├── errors/               # Standardized error types
+│   ├── logging/              # Centralized logging
+│   └── testing/              # Test utilities and mocks
+├── services/
+│   ├── sample/               # Template service
+│   ├── emergency-services/
+│   │   ├── police/
+│   │   ├── fire/
+│   │   └── ambulance/
+│   ├── utilities/
+│   │   ├── water/
+│   │   ├── electric/
+│   │   └── waste/
+│   ├── transportation/
+│   │   ├── traffic/
+│   │   └── public-transit/
+│   └── citizen-services/
+│       ├── requests/
+│       └── permits/
+└── docs/
+    ├── DESIGN.md             # High-level design document
+    └── WALKING-SKELETON.md   # This document
+</code></pre>
+<h2>Technology Stack</h2>
+<p>Based on the design document and additional requirements, the technology stack includes:</p>
+<ul>
+<li><strong>Node.js (v20+) with TypeScript</strong> - For all services</li>
+<li><strong>Express.js</strong> - Web framework for API implementation</li>
+<li><strong>OpenAPI 3.0</strong> - For API contract definition</li>
+<li><strong>Jest</strong> - Testing framework</li>
+<li><strong>Docker &amp; k3d</strong> - Containerization and local Kubernetes</li>
+<li><strong>Gravitee</strong> - API Gateway for routing and management</li>
+<li><strong>OAuth 2.0</strong> - Authentication via centralized IAM service</li>
+<li><strong>Google Pub-Sub</strong> - For event-based communication between services</li>
+<li><strong>Firebase</strong> - Document database for services</li>
+<li><strong>Cloudflare Workers Compatible KV</strong> - For caching and session management</li>
+<li><strong>Swagger UI</strong> - For API documentation and exploration</li>
+<li><strong>Prism</strong> - For API mocking</li>
+<li><strong>ESLint &amp; Prettier</strong> - Code quality and formatting</li>
+</ul>
+<h2>Core Infrastructure Components</h2>
+<h3>1. API Gateway (Gravitee)</h3>
+<p>The API Gateway serves as the entry point for all service requests, providing routing, authentication, rate limiting, and monitoring.</p>
+<pre><code class="language-yaml"># infrastructure/api-gateway/config.yaml
+# Pseudo-code for Gravitee API Gateway configuration
+
+apis:
+  # Sample service API definition
+  - name: sample-service
+    context-path: /sample
+    target: http://sample-service:3000
+    policies:
+      - name: rate-limiting
+        configuration:
+          rate: 100
+          timeUnit: MINUTE
+      - name: oauth2
+        configuration:
+          authorizationServer: http://iam-service:3000
+          clientId: sample-service
+          scopes:
+            - read:sample
+            - write:sample
+
+  # Emergency Services APIs
+  - name: police-service
+    context-path: /emergency/police
+    target: http://police-service:3000
+    policies:
+      - name: oauth2
+      # Additional policies...
+
+  # Other service routes will follow similar pattern
+</code></pre>
+<h3>2. IAM Service</h3>
+<p>A simple OAuth 2.0 service that provides authentication and authorization for all city services.</p>
+<pre><code class="language-typescript">// infrastructure/iam/src/server.ts
+// Pseudo-code for IAM Service
+
+import express from &quot;express&quot;;
+import { generateToken, verifyToken } from &quot;./auth&quot;;
+
+const app = express();
+app.use(express.json());
+
+// Define available scopes for all city services
+const AVAILABLE_SCOPES = {
+  &quot;police-service&quot;: [&quot;read:incidents&quot;, &quot;write:incidents&quot;],
+  &quot;fire-service&quot;: [&quot;read:emergencies&quot;, &quot;write:emergencies&quot;],
+  // Other services...
+};
+
+// OAuth token endpoint
+app.post(&quot;/oauth/token&quot;, (req, res) =&gt; {
+  const { client_id, client_secret, grant_type, scope } = req.body;
+
+  // Validate client credentials
+  // In a real implementation, these would be stored securely
+  if (!validateClient(client_id, client_secret)) {
+    return res.status(401).json({ error: &quot;invalid_client&quot; });
+  }
+
+  // For simplicity in the workshop, always issue a token
+  const token = generateToken({
+    client_id,
+    scope: scope
+      .split(&quot; &quot;)
+      .filter((s) =&gt; AVAILABLE_SCOPES[client_id]?.includes(s)),
+  });
+
+  return res.json({
+    access_token: token,
+    token_type: &quot;bearer&quot;,
+    expires_in: 3600,
+    scope: scope,
+  });
+});
+
+// Token introspection endpoint for gateway validation
+app.post(&quot;/oauth/introspect&quot;, (req, res) =&gt; {
+  const token = req.body.token;
+
+  try {
+    const decoded = verifyToken(token);
+    return res.json({
+      active: true,
+      scope: decoded.scope,
+      client_id: decoded.client_id,
+      exp: decoded.exp,
+    });
+  } catch (err) {
+    return res.json({ active: false });
+  }
+});
+
+app.listen(3000, () =&gt; {
+  console.log(&quot;IAM Service running on port 3000&quot;);
+});
+</code></pre>
+<h3>3. Service Registry</h3>
+<p>A service discovery mechanism allowing services to find and communicate with each other.</p>
+<pre><code class="language-typescript">// infrastructure/service-registry/src/server.ts
+// Pseudo-code for Service Registry
+
+import express from &quot;express&quot;;
+import { KVStore } from &quot;./kv-store&quot;;
+
+const app = express();
+app.use(express.json());
+
+// In-memory store for service registration
+// In production, use a distributed KV store
+const serviceRegistry = new KVStore();
+
+// Register a service
+app.post(&quot;/register&quot;, (req, res) =&gt; {
+  const { name, url, health_check_url, metadata } = req.body;
+
+  serviceRegistry.set(name, {
+    url,
+    health_check_url,
+    metadata,
+    last_heartbeat: Date.now(),
+  });
+
+  return res.status(201).json({ status: &quot;registered&quot; });
+});
+
+// Service heartbeat
+app.post(&quot;/heartbeat/:name&quot;, (req, res) =&gt; {
+  const name = req.params.name;
+  const service = serviceRegistry.get(name);
+
+  if (!service) {
+    return res.status(404).json({ error: &quot;service_not_found&quot; });
+  }
+
+  service.last_heartbeat = Date.now();
+  serviceRegistry.set(name, service);
+
+  return res.json({ status: &quot;ok&quot; });
+});
+
+// Discover services
+app.get(&quot;/services&quot;, (req, res) =&gt; {
+  const services = {};
+  for (const [name, details] of serviceRegistry.entries()) {
+    services[name] = details;
+  }
+
+  return res.json(services);
+});
+
+// Get specific service
+app.get(&quot;/services/:name&quot;, (req, res) =&gt; {
+  const name = req.params.name;
+  const service = serviceRegistry.get(name);
+
+  if (!service) {
+    return res.status(404).json({ error: &quot;service_not_found&quot; });
+  }
+
+  return res.json(service);
+});
+
+app.listen(3000, () =&gt; {
+  console.log(&quot;Service Registry running on port 3000&quot;);
+});
+</code></pre>
+<h3>4. Event Bus Configuration</h3>
+<p>Setup for Google Pub-Sub topics and subscriptions to enable event-based communication between services.</p>
+<pre><code class="language-typescript">// infrastructure/event-bus/setup.ts
+// Pseudo-code for setting up Google Pub-Sub topics
+
+import { PubSub } from &quot;@google-cloud/pubsub&quot;;
+
+const pubsub = new PubSub();
+
+// Create topics for various event categories
+async function setupEventBus() {
+  // Emergency service events
+  await pubsub.createTopic(&quot;emergency.incidents.reported&quot;);
+  await pubsub.createTopic(&quot;emergency.incidents.updated&quot;);
+  await pubsub.createTopic(&quot;emergency.incidents.resolved&quot;);
+
+  // Utility service events
+  await pubsub.createTopic(&quot;utilities.outages.reported&quot;);
+  await pubsub.createTopic(&quot;utilities.maintenance.scheduled&quot;);
+
+  // Transportation events
+  await pubsub.createTopic(&quot;transportation.traffic.congestion&quot;);
+  await pubsub.createTopic(&quot;transportation.public-transit.delays&quot;);
+
+  // Citizen service events
+  await pubsub.createTopic(&quot;citizen.requests.submitted&quot;);
+  await pubsub.createTopic(&quot;citizen.permits.approved&quot;);
+
+  console.log(&quot;Event bus topics created successfully&quot;);
+}
+
+setupEventBus().catch(console.error);
+</code></pre>
+<h2>Common Components</h2>
+<h3>1. Shared Models</h3>
+<p>Common data models used across city services.</p>
+<pre><code class="language-typescript">// common/models/common.ts
+// Pseudo-code for common data models
+
+export interface Location {
+  address: string;
+  neighborhood: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+export interface TimeRange {
+  start: Date;
+  end?: Date;
+}
+
+export interface Contact {
+  name: string;
+  phone?: string;
+  email?: string;
+}
+
+export enum Priority {
+  LOW = &quot;low&quot;,
+  MEDIUM = &quot;medium&quot;,
+  HIGH = &quot;high&quot;,
+  CRITICAL = &quot;critical&quot;,
+}
+
+export interface Paginated&lt;T&gt; {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
+  next_cursor?: string;
+}
+</code></pre>
+<h3>2. Standardized Errors</h3>
+<p>Unified error handling across all services.</p>
+<pre><code class="language-typescript">// common/errors/index.ts
+// Pseudo-code for standardized error handling
+
+export class ApiError extends Error {
+  statusCode: number;
+  errorCode: string;
+  details?: any;
+
+  constructor(
+    statusCode: number,
+    errorCode: string,
+    message: string,
+    details?: any,
+  ) {
+    super(message);
+    this.statusCode = statusCode;
+    this.errorCode = errorCode;
+    this.details = details;
+  }
+
+  toJSON() {
+    return {
+      error: {
+        code: this.errorCode,
+        message: this.message,
+        details: this.details,
+      },
+    };
+  }
+}
+
+export class NotFoundError extends ApiError {
+  constructor(resource: string, id: string) {
+    super(404, &quot;resource_not_found&quot;, `${resource} with id ${id} not found`);
+  }
+}
+
+export class ValidationError extends ApiError {
+  constructor(details: any) {
+    super(400, &quot;validation_error&quot;, &quot;Validation failed&quot;, details);
+  }
+}
+
+export class AuthorizationError extends ApiError {
+  constructor(message = &quot;Insufficient permissions&quot;) {
+    super(403, &quot;forbidden&quot;, message);
+  }
+}
+
+// Express middleware for handling errors
+export function errorHandler(err, req, res, next) {
+  if (err instanceof ApiError) {
+    return res.status(err.statusCode).json(err.toJSON());
+  }
+
+  // Log unexpected errors
+  console.error(err);
+
+  // Return generic error
+  return res.status(500).json({
+    error: {
+      code: &quot;internal_server_error&quot;,
+      message: &quot;An unexpected error occurred&quot;,
+    },
+  });
+}
+</code></pre>
+<h3>3. Logging</h3>
+<p>Centralized logging infrastructure.</p>
+<pre><code class="language-typescript">// common/logging/index.ts
+// Pseudo-code for centralized logging
+
+export enum LogLevel {
+  DEBUG = &quot;debug&quot;,
+  INFO = &quot;info&quot;,
+  WARN = &quot;warn&quot;,
+  ERROR = &quot;error&quot;,
+}
+
+export interface LogContext {
+  service: string;
+  requestId?: string;
+  userId?: string;
+  [key: string]: any;
+}
+
+export class Logger {
+  private context: LogContext;
+
+  constructor(context: LogContext) {
+    this.context = context;
+  }
+
+  private log(level: LogLevel, message: string, data?: any) {
+    const timestamp = new Date().toISOString();
+    const logEntry = {
+      timestamp,
+      level,
+      message,
+      ...this.context,
+      ...(data ? { data } : {}),
+    };
+
+    // In production, send to centralized logging
+    console.log(JSON.stringify(logEntry));
+  }
+
+  debug(message: string, data?: any) {
+    this.log(LogLevel.DEBUG, message, data);
+  }
+
+  info(message: string, data?: any) {
+    this.log(LogLevel.INFO, message, data);
+  }
+
+  warn(message: string, data?: any) {
+    this.log(LogLevel.WARN, message, data);
+  }
+
+  error(message: string, error?: Error, data?: any) {
+    this.log(LogLevel.ERROR, message, {
+      ...(data || {}),
+      stack: error?.stack,
+      message: error?.message,
+    });
+  }
+
+  // Create a new logger with additional context
+  withContext(additionalContext: Partial&lt;LogContext&gt;) {
+    return new Logger({
+      ...this.context,
+      ...additionalContext,
+    });
+  }
+}
+
+// Express middleware for request logging
+export function requestLogger(serviceName: string) {
+  return (req, res, next) =&gt; {
+    const requestId = req.headers[&quot;x-request-id&quot;] || generateRequestId();
+    const startTime = Date.now();
+
+    // Add request ID header for tracing
+    res.setHeader(&quot;x-request-id&quot;, requestId);
+
+    // Create logger for this request
+    const logger = new Logger({
+      service: serviceName,
+      requestId,
+      method: req.method,
+      path: req.path,
+    });
+
+    // Attach logger to request object
+    req.logger = logger;
+
+    // Log request completion
+    res.on(&quot;finish&quot;, () =&gt; {
+      const duration = Date.now() - startTime;
+      logger.info(&quot;Request completed&quot;, {
+        statusCode: res.statusCode,
+        duration,
+        userAgent: req.headers[&quot;user-agent&quot;],
+      });
+    });
+
+    next();
+  };
+}
+</code></pre>
+<h2>Service Template</h2>
+<p>Each service in the city ecosystem follows a common structure, making it easy for workshop participants to understand and extend.</p>
+<pre><code>service-name/
+├── api/
+│   └── openapi.yaml       # API contract definition
+├── src/
+│   ├── index.ts           # Service entry point
+│   ├── config.ts          # Configuration loading
+│   ├── controllers/       # Route handlers
+│   ├── services/          # Business logic
+│   ├── models/            # Domain models
+│   ├── repositories/      # Data access
+│   ├── events/            # Event publishers/subscribers
+│   └── middleware/        # Custom middleware
+├── tests/
+│   ├── unit/              # Unit tests
+│   ├── integration/       # Integration tests
+│   └── contract/          # Contract tests
+├── Dockerfile             # Container definition
+└── package.json           # Dependencies and scripts
+</code></pre>
+<h3>Sample Service Implementation</h3>
+<pre><code class="language-typescript">// services/sample/src/index.ts
+// Pseudo-code for sample service entry point
+
+import express from &quot;express&quot;;
+import { errorHandler } from &quot;common/errors&quot;;
+import { requestLogger } from &quot;common/logging&quot;;
+import controllers from &quot;./controllers&quot;;
+import middleware from &quot;./middleware&quot;;
+import { initEventSubscriptions } from &quot;./events&quot;;
+import config from &quot;./config&quot;;
+
+// Initialize Express app
+const app = express();
+
+// Middleware setup
+app.use(express.json());
+app.use(requestLogger(&quot;sample-service&quot;));
+app.use(middleware.validateApiKey);
+
+// Register routes
+app.use(&quot;/api/v1/resources&quot;, controllers.resources);
+app.use(&quot;/api/v1/health&quot;, (req, res) =&gt; res.json({ status: &quot;ok&quot; }));
+
+// Error handling
+app.use(errorHandler);
+
+// Start server
+const server = app.listen(config.port, () =&gt; {
+  console.log(`Sample service running on port ${config.port}`);
+
+  // Register with service registry
+  registerService();
+
+  // Setup event subscriptions
+  initEventSubscriptions();
+});
+
+// Graceful shutdown
+process.on(&quot;SIGTERM&quot;, () =&gt; {
+  console.log(&quot;SIGTERM received, shutting down&quot;);
+  server.close(() =&gt; {
+    console.log(&quot;Server closed&quot;);
+    process.exit(0);
+  });
+});
+
+// Service registry registration
+function registerService() {
+  fetch(`${config.serviceRegistry.url}/register`, {
+    method: &quot;POST&quot;,
+    headers: { &quot;Content-Type&quot;: &quot;application/json&quot; },
+    body: JSON.stringify({
+      name: &quot;sample-service&quot;,
+      url: `http://sample-service:${config.port}`,
+      health_check_url: `http://sample-service:${config.port}/api/v1/health`,
+      metadata: {
+        version: process.env.VERSION || &quot;1.0.0&quot;,
+      },
+    }),
+  })
+    .then(() =&gt; {
+      console.log(&quot;Registered with service registry&quot;);
+
+      // Setup heartbeat interval
+      setInterval(() =&gt; {
+        fetch(`${config.serviceRegistry.url}/heartbeat/sample-service`, {
+          method: &quot;POST&quot;,
+        }).catch((err) =&gt; {
+          console.error(&quot;Failed to send heartbeat&quot;, err);
+        });
+      }, 30000);
+    })
+    .catch((err) =&gt; {
+      console.error(&quot;Failed to register with service registry&quot;, err);
+    });
+}
+</code></pre>
+<h3>API Contract First Approach</h3>
+<pre><code class="language-yaml"># services/sample/api/openapi.yaml
+# Pseudo-code for OpenAPI specification
+
+openapi: 3.0.0
+info:
+  title: Sample Service API
+  version: 1.0.0
+  description: Template service demonstrating API-first design
+paths:
+  /resources:
+    get:
+      summary: List resources
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        200:
+          description: List of resources
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/ResourceList&quot;
+    post:
+      summary: Create a new resource
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: &quot;#/components/schemas/ResourceCreate&quot;
+      responses:
+        201:
+          description: Resource created
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Resource&quot;
+  /resources/{id}:
+    get:
+      summary: Get a resource by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Resource details
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Resource&quot;
+        404:
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Error&quot;
+components:
+  schemas:
+    Resource:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+    ResourceCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+      required:
+        - name
+    ResourceList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: &quot;#/components/schemas/Resource&quot;
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+</code></pre>
+<h2>City Service Categories</h2>
+<p>The workshop includes several categories of city services, each with its own domain focus but following consistent API-first principles. Below are the key service categories and their implementation details.</p>
+<h3>1. Emergency Services</h3>
+<p>Emergency services handle critical incidents and emergency responses throughout the city.</p>
+<h4>Police Department Service</h4>
+<pre><code class="language-yaml"># services/emergency-services/police/api/openapi.yaml
+# Pseudo-code for Police Department API
+
+openapi: 3.0.0
+info:
+  title: Police Department API
+  version: 1.0.0
+  description: API for city police department services
+paths:
+  /incidents:
+    get:
+      summary: List incidents
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [reported, in-progress, resolved]
+        - name: neighborhood
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of incidents
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/IncidentList&quot;
+    post:
+      summary: Report a new incident
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: &quot;#/components/schemas/IncidentReport&quot;
+      responses:
+        201:
+          description: Incident created
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Incident&quot;
+  /incidents/{id}:
+    get:
+      summary: Get incident details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Incident details
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Incident&quot;
+    patch:
+      summary: Update incident status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: &quot;#/components/schemas/IncidentUpdate&quot;
+      responses:
+        200:
+          description: Incident updated
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Incident&quot;
+components:
+  schemas:
+    Incident:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [theft, vandalism, noise, traffic, other]
+        location:
+          $ref: &quot;#/components/schemas/Location&quot;
+        status:
+          type: string
+          enum: [reported, in-progress, resolved]
+        reportedAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+        description:
+          type: string
+        priority:
+          $ref: &quot;#/components/schemas/Priority&quot;
+      required:
+        - id
+        - type
+        - location
+        - status
+        - reportedAt
+    # Other schema definitions...
+</code></pre>
+<h4>Fire Department Service</h4>
+<pre><code class="language-yaml"># services/emergency-services/fire/api/openapi.yaml
+# Pseudo-code for Fire Department API
+
+openapi: 3.0.0
+info:
+  title: Fire Department API
+  version: 1.0.0
+  description: API for city fire department services
+paths:
+  /emergencies:
+    get:
+      summary: List fire emergencies
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [reported, responding, contained, resolved]
+      responses:
+        200:
+          description: List of fire emergencies
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/EmergencyList&quot;
+    post:
+      summary: Report a new fire emergency
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: &quot;#/components/schemas/EmergencyReport&quot;
+      responses:
+        201:
+          description: Emergency created
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Emergency&quot;
+  # Other endpoints...
+components:
+  schemas:
+    Emergency:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [structure, vehicle, wildfire, hazmat, other]
+        location:
+          $ref: &quot;#/components/schemas/Location&quot;
+        status:
+          type: string
+          enum: [reported, responding, contained, resolved]
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        reportedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - location
+        - status
+        - severity
+        - reportedAt
+    # Other schema definitions...
+</code></pre>
+<h3>2. Utilities Services</h3>
+<p>Utilities services manage essential city infrastructure like water, electricity, and waste management.</p>
+<h4>Water Service</h4>
+<pre><code class="language-yaml"># services/utilities/water/api/openapi.yaml
+# Pseudo-code for Water Utility API
+
+openapi: 3.0.0
+info:
+  title: Water Utility API
+  version: 1.0.0
+  description: API for city water utility services
+paths:
+  /outages:
+    get:
+      summary: List water outages
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [planned, in-progress, resolved]
+        - name: neighborhood
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of water outages
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/OutageList&quot;
+    post:
+      summary: Report a new water outage
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: &quot;#/components/schemas/OutageReport&quot;
+      responses:
+        201:
+          description: Outage created
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Outage&quot;
+  /usage:
+    get:
+      summary: Get water usage statistics
+      parameters:
+        - name: neighborhood
+          in: query
+          schema:
+            type: string
+        - name: timeframe
+          in: query
+          schema:
+            type: string
+            enum: [daily, weekly, monthly]
+            default: daily
+      responses:
+        200:
+          description: Water usage statistics
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/UsageStats&quot;
+  # Other endpoints...
+components:
+  schemas:
+    Outage:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [planned, in-progress, resolved]
+        affectedArea:
+          $ref: &quot;#/components/schemas/Area&quot;
+        startTime:
+          type: string
+          format: date-time
+        estimatedResolutionTime:
+          type: string
+          format: date-time
+        actualResolutionTime:
+          type: string
+          format: date-time
+        reason:
+          type: string
+      required:
+        - id
+        - status
+        - affectedArea
+        - startTime
+    # Other schema definitions...
+</code></pre>
+<h4>Electric Service</h4>
+<pre><code class="language-yaml"># services/utilities/electric/api/openapi.yaml
+# Pseudo-code for Electric Utility API
+
+openapi: 3.0.0
+info:
+  title: Electric Utility API
+  version: 1.0.0
+  description: API for city electric utility services
+paths:
+  /outages:
+    get:
+      summary: List power outages
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [planned, in-progress, resolved]
+        - name: neighborhood
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of power outages
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/OutageList&quot;
+    post:
+      summary: Report a new power outage
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: &quot;#/components/schemas/OutageReport&quot;
+      responses:
+        201:
+          description: Outage created
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Outage&quot;
+  /consumption:
+    get:
+      summary: Get power consumption data
+      parameters:
+        - name: neighborhood
+          in: query
+          schema:
+            type: string
+        - name: timeframe
+          in: query
+          schema:
+            type: string
+            enum: [hourly, daily, weekly, monthly]
+            default: daily
+      responses:
+        200:
+          description: Power consumption statistics
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/ConsumptionStats&quot;
+  /grid-status:
+    get:
+      summary: Get current power grid status
+      responses:
+        200:
+          description: Current status of the power grid
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/GridStatus&quot;
+components:
+  schemas:
+    Outage:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [planned, in-progress, resolved]
+        affectedArea:
+          $ref: &quot;#/components/schemas/Area&quot;
+        startTime:
+          type: string
+          format: date-time
+        estimatedResolutionTime:
+          type: string
+          format: date-time
+        actualResolutionTime:
+          type: string
+          format: date-time
+        reason:
+          type: string
+        affectedCustomers:
+          type: integer
+      required:
+        - id
+        - status
+        - affectedArea
+        - startTime
+        - affectedCustomers
+    GridStatus:
+      type: object
+      properties:
+        overallStatus:
+          type: string
+          enum: [normal, alert, critical]
+        loadPercentage:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        activeOutages:
+          type: integer
+        lastUpdated:
+          type: string
+          format: date-time
+      required:
+        - overallStatus
+        - loadPercentage
+        - activeOutages
+        - lastUpdated
+    # Other schema definitions...
+</code></pre>
+<h4>Waste Service</h4>
+<pre><code class="language-yaml"># services/utilities/waste/api/openapi.yaml
+# Pseudo-code for Waste Utility API
+
+openapi: 3.0.0
+info:
+  title: Waste Utility API
+  version: 1.0.0
+  description: API for city waste utility services
+paths:
+  /outages:
+    get:
+      summary: List waste outages
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [planned, in-progress, resolved]
+        - name: neighborhood
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of waste outages
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/OutageList&quot;
+    post:
+      summary: Report a new waste outage
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: &quot;#/components/schemas/OutageReport&quot;
+      responses:
+        201:
+          description: Outage created
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Outage&quot;
+  /usage:
+    get:
+      summary: Get waste usage statistics
+      parameters:
+        - name: neighborhood
+          in: query
+          schema:
+            type: string
+        - name: timeframe
+          in: query
+          schema:
+            type: string
+            enum: [daily, weekly, monthly]
+            default: daily
+      responses:
+        200:
+          description: Waste usage statistics
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/UsageStats&quot;
+  # Other endpoints...
+components:
+  schemas:
+    Outage:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [planned, in-progress, resolved]
+        affectedArea:
+          $ref: &quot;#/components/schemas/Area&quot;
+        startTime:
+          type: string
+          format: date-time
+        estimatedResolutionTime:
+          type: string
+          format: date-time
+        actualResolutionTime:
+          type: string
+          format: date-time
+        reason:
+          type: string
+      required:
+        - id
+        - status
+        - affectedArea
+        - startTime
+    # Other schema definitions...
+</code></pre>
+<h3>3. Transportation Services</h3>
+<p>Transportation services manage traffic flow and public transit operations throughout the city.</p>
+<h4>Traffic Service</h4>
+<pre><code class="language-yaml"># services/transportation/traffic/api/openapi.yaml
+# Pseudo-code for Traffic Service API
+
+openapi: 3.0.0
+info:
+  title: Traffic Service API
+  version: 1.0.0
+  description: API for city traffic management
+paths:
+  /congestion:
+    get:
+      summary: Get traffic congestion information
+      parameters:
+        - name: neighborhood
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Current traffic congestion data
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/CongestionMap&quot;
+  /incidents:
+    get:
+      summary: List traffic incidents
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, cleared]
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high]
+      responses:
+        200:
+          description: List of traffic incidents
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/IncidentList&quot;
+    post:
+      summary: Report a traffic incident
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: &quot;#/components/schemas/IncidentReport&quot;
+      responses:
+        201:
+          description: Incident reported
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Incident&quot;
+  /road-closures:
+    get:
+      summary: Get road closure information
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        200:
+          description: List of road closures
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/RoadClosureList&quot;
+components:
+  schemas:
+    CongestionMap:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        areas:
+          type: array
+          items:
+            $ref: &quot;#/components/schemas/TrafficArea&quot;
+      required:
+        - timestamp
+        - areas
+    TrafficArea:
+      type: object
+      properties:
+        name:
+          type: string
+        congestionLevel:
+          type: string
+          enum: [light, moderate, heavy, severe]
+        averageSpeed:
+          type: number
+          format: float
+        coordinates:
+          type: array
+          items:
+            $ref: &quot;#/components/schemas/Coordinates&quot;
+      required:
+        - name
+        - congestionLevel
+        - averageSpeed
+    Incident:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [accident, construction, event, hazard, other]
+        location:
+          $ref: &quot;#/components/schemas/Location&quot;
+        status:
+          type: string
+          enum: [active, cleared]
+        severity:
+          type: string
+          enum: [low, medium, high]
+        reportedAt:
+          type: string
+          format: date-time
+        clearedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - location
+        - status
+        - severity
+        - reportedAt
+    # Other schema definitions...
+</code></pre>
+<h4>Public Transit Service</h4>
+<pre><code class="language-yaml"># services/transportation/public-transit/api/openapi.yaml
+# Pseudo-code for Public Transit Service API
+
+openapi: 3.0.0
+info:
+  title: Public Transit Service API
+  version: 1.0.0
+  description: API for city public transit operations
+paths:
+  /routes:
+    get:
+      summary: List transit routes
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [bus, subway, tram, ferry]
+      responses:
+        200:
+          description: List of transit routes
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/RouteList&quot;
+  /routes/{routeId}:
+    get:
+      summary: Get route details
+      parameters:
+        - name: routeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Route details
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Route&quot;
+  /vehicles:
+    get:
+      summary: Get vehicle locations
+      parameters:
+        - name: routeId
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Current vehicle locations
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/VehicleLocationList&quot;
+  /schedule:
+    get:
+      summary: Get transit schedule
+      parameters:
+        - name: routeId
+          in: query
+          schema:
+            type: string
+        - name: stopId
+          in: query
+          schema:
+            type: string
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        200:
+          description: Transit schedule
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/ScheduleList&quot;
+  /delays:
+    get:
+      summary: Get current transit delays
+      responses:
+        200:
+          description: Current transit delays
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/DelayList&quot;
+components:
+  schemas:
+    Route:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [bus, subway, tram, ferry]
+        stops:
+          type: array
+          items:
+            $ref: &quot;#/components/schemas/Stop&quot;
+        status:
+          type: string
+          enum: [active, suspended, modified]
+      required:
+        - id
+        - name
+        - type
+        - stops
+        - status
+    Stop:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        location:
+          $ref: &quot;#/components/schemas/Location&quot;
+        accessibility:
+          type: boolean
+      required:
+        - id
+        - name
+        - location
+    Vehicle:
+      type: object
+      properties:
+        id:
+          type: string
+        routeId:
+          type: string
+        location:
+          $ref: &quot;#/components/schemas/Location&quot;
+        heading:
+          type: number
+        speed:
+          type: number
+        capacity:
+          type: integer
+        occupancy:
+          type: string
+          enum: [empty, low, medium, high, full]
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - routeId
+        - location
+        - updatedAt
+    # Other schema definitions...
+</code></pre>
+<h3>4. Citizen Services</h3>
+<p>Citizen Services facilitate direct interaction between residents and city government, handling service requests and permit applications.</p>
+<h4>Service Requests</h4>
+<pre><code class="language-yaml"># services/citizen-services/requests/api/openapi.yaml
+# Pseudo-code for Citizen Service Requests API
+
+openapi: 3.0.0
+info:
+  title: Service Requests API
+  version: 1.0.0
+  description: API for city service requests management
+paths:
+  /requests:
+    get:
+      summary: List service requests
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [submitted, in-progress, completed, canceled]
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: neighborhood
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of service requests
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/RequestList&quot;
+    post:
+      summary: Submit a new service request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: &quot;#/components/schemas/RequestSubmission&quot;
+      responses:
+        201:
+          description: Service request submitted
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Request&quot;
+  /requests/{id}:
+    get:
+      summary: Get service request details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Service request details
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Request&quot;
+    patch:
+      summary: Update service request status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: &quot;#/components/schemas/RequestUpdate&quot;
+      responses:
+        200:
+          description: Service request updated
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Request&quot;
+  /categories:
+    get:
+      summary: List service request categories
+      responses:
+        200:
+          description: List of service categories
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/CategoryList&quot;
+components:
+  schemas:
+    Request:
+      type: object
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+        subcategory:
+          type: string
+        status:
+          type: string
+          enum: [submitted, in-progress, completed, canceled]
+        priority:
+          $ref: &quot;#/components/schemas/Priority&quot;
+        location:
+          $ref: &quot;#/components/schemas/Location&quot;
+        description:
+          type: string
+        submittedBy:
+          $ref: &quot;#/components/schemas/Contact&quot;
+        submittedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        assignedDepartment:
+          type: string
+        photos:
+          type: array
+          items:
+            type: string
+            format: uri
+      required:
+        - id
+        - category
+        - status
+        - location
+        - description
+        - submittedBy
+        - submittedAt
+    RequestSubmission:
+      type: object
+      properties:
+        category:
+          type: string
+        subcategory:
+          type: string
+        location:
+          $ref: &quot;#/components/schemas/Location&quot;
+        description:
+          type: string
+        submittedBy:
+          $ref: &quot;#/components/schemas/Contact&quot;
+        photos:
+          type: array
+          items:
+            type: string
+            format: uri
+      required:
+        - category
+        - location
+        - description
+        - submittedBy
+    # Other schema definitions...
+</code></pre>
+<h4>Permits Service</h4>
+<pre><code class="language-yaml"># services/citizen-services/permits/api/openapi.yaml
+# Pseudo-code for Permits Service API
+
+openapi: 3.0.0
+info:
+  title: Permits Service API
+  version: 1.0.0
+  description: API for city permits management
+paths:
+  /permits:
+    get:
+      summary: List permits
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, submitted, under-review, approved, rejected, expired]
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: applicantId
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of permits
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/PermitList&quot;
+    post:
+      summary: Create a new permit application
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: &quot;#/components/schemas/PermitApplication&quot;
+      responses:
+        201:
+          description: Permit application created
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Permit&quot;
+  /permits/{id}:
+    get:
+      summary: Get permit details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Permit details
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Permit&quot;
+    patch:
+      summary: Update permit status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: &quot;#/components/schemas/PermitUpdate&quot;
+      responses:
+        200:
+          description: Permit updated
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Permit&quot;
+  /permit-types:
+    get:
+      summary: List available permit types
+      responses:
+        200:
+          description: List of permit types
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/PermitTypeList&quot;
+components:
+  schemas:
+    Permit:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+          enum: [draft, submitted, under-review, approved, rejected, expired]
+        applicant:
+          $ref: &quot;#/components/schemas/Contact&quot;
+        location:
+          $ref: &quot;#/components/schemas/Location&quot;
+        submittedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        reviewerId:
+          type: string
+        reviewComments:
+          type: string
+        attachments:
+          type: array
+          items:
+            $ref: &quot;#/components/schemas/Attachment&quot;
+      required:
+        - id
+        - type
+        - status
+        - applicant
+        - location
+    PermitApplication:
+      type: object
+      properties:
+        type:
+          type: string
+        applicant:
+          $ref: &quot;#/components/schemas/Contact&quot;
+        location:
+          $ref: &quot;#/components/schemas/Location&quot;
+        description:
+          type: string
+        attachments:
+          type: array
+          items:
+            $ref: &quot;#/components/schemas/Attachment&quot;
+      required:
+        - type
+        - applicant
+        - location
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+          format: uri
+        uploadedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - type
+        - url
+        - uploadedAt
+    # Other schema definitions...
+</code></pre>
+<h2>Testing Patterns</h2>
+<p>The walking skeleton includes standardized testing patterns to ensure the quality and reliability of all city services.</p>
+<h3>1. Contract Testing</h3>
+<p>Contract tests verify that service implementations adhere to their OpenAPI specifications.</p>
+<pre><code class="language-typescript">// services/sample/tests/contract/resources.test.ts
+// Pseudo-code for contract testing
+
+import { OpenAPIValidator } from &quot;express-openapi-validator&quot;;
+import request from &quot;supertest&quot;;
+import app from &quot;../../src/app&quot;;
+import * as path from &quot;path&quot;;
+
+describe(&quot;Resources API Contract Tests&quot;, () =&gt; {
+  beforeAll(async () =&gt; {
+    // Setup OpenAPI validator with the service's API spec
+    const apiSpec = path.join(__dirname, &quot;../../api/openapi.yaml&quot;);
+    const validator = new OpenAPIValidator({
+      apiSpec,
+      validateRequests: true,
+      validateResponses: true,
+    });
+
+    // Add validator middleware to app
+    app.use(validator.middleware());
+  });
+
+  describe(&quot;GET /resources&quot;, () =&gt; {
+    it(&quot;should return resources list that matches schema&quot;, async () =&gt; {
+      const response = await request(app)
+        .get(&quot;/api/v1/resources&quot;)
+        .expect(&quot;Content-Type&quot;, /json/)
+        .expect(200);
+
+      // The validator middleware will automatically validate
+      // the response against the schema
+      expect(response.body).toHaveProperty(&quot;items&quot;);
+      expect(response.body).toHaveProperty(&quot;total&quot;);
+    });
+
+    it(&quot;should validate query parameters&quot;, async () =&gt; {
+      // Test with invalid parameters to ensure validation
+      await request(app).get(&quot;/api/v1/resources?page=invalid&quot;).expect(400); // Should fail validation
+    });
+  });
+
+  // Additional endpoint tests...
+});
+</code></pre>
+<h3>2. Integration Testing</h3>
+<p>Integration tests verify that services interact correctly with other components.</p>
+<pre><code class="language-typescript">// services/emergency-services/police/tests/integration/incidents.test.ts
+// Pseudo-code for integration testing
+
+import request from &quot;supertest&quot;;
+import app from &quot;../../src/app&quot;;
+import { mockEventPublisher } from &quot;../../src/mocks/events&quot;;
+import { mockServiceRegistry } from &quot;../../src/mocks/serviceRegistry&quot;;
+
+describe(&quot;Incidents API Integration Tests&quot;, () =&gt; {
+  beforeEach(() =&gt; {
+    // Reset mocks before each test
+    mockEventPublisher.reset();
+    mockServiceRegistry.reset();
+  });
+
+  describe(&quot;POST /incidents&quot;, () =&gt; {
+    it(&quot;should publish event after creating incident&quot;, async () =&gt; {
+      const newIncident = {
+        type: &quot;theft&quot;,
+        location: {
+          address: &quot;123 Main St&quot;,
+          neighborhood: &quot;Downtown&quot;,
+          coordinates: {
+            latitude: 37.7749,
+            longitude: -122.4194,
+          },
+        },
+        description: &quot;Bike theft reported&quot;,
+      };
+
+      const response = await request(app)
+        .post(&quot;/api/v1/incidents&quot;)
+        .send(newIncident)
+        .expect(201);
+
+      // Verify the incident was created
+      expect(response.body).toHaveProperty(&quot;id&quot;);
+
+      // Verify event was published
+      expect(mockEventPublisher.getPublishedEvents()).toContainEqual({
+        topic: &quot;emergency.incidents.reported&quot;,
+        data: expect.objectContaining({
+          incidentId: response.body.id,
+          type: &quot;theft&quot;,
+        }),
+      });
+    });
+
+    it(&quot;should notify traffic service about incident&quot;, async () =&gt; {
+      // Similar to above test but verify interaction with traffic service
+      // through service registry mock
+    });
+  });
+});
+</code></pre>
+<h3>3. Unit Testing</h3>
+<p>Unit tests verify the correctness of individual components.</p>
+<pre><code class="language-typescript">// services/sample/tests/unit/services/resourceService.test.ts
+// Pseudo-code for unit testing
+
+import { ResourceService } from &quot;../../../src/services/resourceService&quot;;
+import { mockResourceRepository } from &quot;../../../src/mocks/repositories&quot;;
+
+describe(&quot;ResourceService&quot;, () =&gt; {
+  let resourceService: ResourceService;
+
+  beforeEach(() =&gt; {
+    mockResourceRepository.reset();
+    resourceService = new ResourceService(mockResourceRepository);
+  });
+
+  describe(&quot;getResources&quot;, () =&gt; {
+    it(&quot;should retrieve a list of resources&quot;, async () =&gt; {
+      mockResourceRepository.setResources([
+        { id: &quot;1&quot;, name: &quot;Resource 1&quot; },
+        { id: &quot;2&quot;, name: &quot;Resource 2&quot; },
+      ]);
+
+      const result = await resourceService.getResources({});
+
+      expect(result.items).toHaveLength(2);
+      expect(result.total).toBe(2);
+    });
+
+    it(&quot;should apply filters when provided&quot;, async () =&gt; {
+      mockResourceRepository.setResources([
+        { id: &quot;1&quot;, name: &quot;Resource 1&quot;, type: &quot;A&quot; },
+        { id: &quot;2&quot;, name: &quot;Resource 2&quot;, type: &quot;B&quot; },
+      ]);
+
+      const result = await resourceService.getResources({ type: &quot;A&quot; });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].id).toBe(&quot;1&quot;);
+    });
+  });
+
+  describe(&quot;createResource&quot;, () =&gt; {
+    it(&quot;should create a new resource&quot;, async () =&gt; {
+      const newResource = { name: &quot;New Resource&quot; };
+
+      const result = await resourceService.createResource(newResource);
+
+      expect(result).toHaveProperty(&quot;id&quot;);
+      expect(result.name).toBe(&quot;New Resource&quot;);
+      expect(mockResourceRepository.getResources()).toContainEqual(
+        expect.objectContaining({ name: &quot;New Resource&quot; }),
+      );
+    });
+  });
+});
+</code></pre>
+<h3>4. End-to-End Testing</h3>
+<p>End-to-end tests verify the complete user journey across multiple services.</p>
+<pre><code class="language-typescript">// tests/e2e/citizen-emergency-flow.test.ts
+// Pseudo-code for end-to-end testing
+
+import request from &quot;supertest&quot;;
+import { setupTestEnvironment, teardownTestEnvironment } from &quot;./environment&quot;;
+
+describe(&quot;Citizen Emergency Reporting Flow&quot;, () =&gt; {
+  let serviceUrls;
+
+  beforeAll(async () =&gt; {
+    // Start all required services in test mode
+    serviceUrls = await setupTestEnvironment([
+      &quot;api-gateway&quot;,
+      &quot;iam&quot;,
+      &quot;citizen-services-requests&quot;,
+      &quot;emergency-services-police&quot;,
+    ]);
+  });
+
+  afterAll(async () =&gt; {
+    await teardownTestEnvironment();
+  });
+
+  it(&quot;should allow a citizen to report an emergency that gets routed to police&quot;, async () =&gt; {
+    // Step 1: Get authentication token
+    const authResponse = await request(serviceUrls.iam)
+      .post(&quot;/oauth/token&quot;)
+      .send({
+        client_id: &quot;citizen-app&quot;,
+        client_secret: &quot;test-secret&quot;,
+        grant_type: &quot;client_credentials&quot;,
+        scope: &quot;write:requests&quot;,
+      });
+
+    const token = authResponse.body.access_token;
+
+    // Step 2: Submit service request through citizen services
+    const requestResponse = await request(serviceUrls[&quot;api-gateway&quot;])
+      .post(&quot;/citizen/requests&quot;)
+      .set(&quot;Authorization&quot;, `Bearer ${token}`)
+      .send({
+        category: &quot;emergency&quot;,
+        subcategory: &quot;crime&quot;,
+        location: {
+          address: &quot;123 Main St&quot;,
+          neighborhood: &quot;Downtown&quot;,
+          coordinates: {
+            latitude: 37.7749,
+            longitude: -122.4194,
+          },
+        },
+        description: &quot;Suspicious activity&quot;,
+        submittedBy: {
+          name: &quot;John Doe&quot;,
+          phone: &quot;555-123-4567&quot;,
+        },
+      });
+
+    expect(requestResponse.status).toBe(201);
+    const requestId = requestResponse.body.id;
+
+    // Step 3: Verify request appears in police incidents after processing
+    // May need retry logic for eventual consistency
+    let policeIncident;
+    for (let i = 0; i &lt; 5; i++) {
+      const policeResponse = await request(serviceUrls[&quot;api-gateway&quot;])
+        .get(&quot;/emergency/police/incidents&quot;)
+        .set(&quot;Authorization&quot;, `Bearer ${token}`)
+        .query({ externalRequestId: requestId });
+
+      if (policeResponse.body.items.length &gt; 0) {
+        policeIncident = policeResponse.body.items[0];
+        break;
+      }
+
+      await new Promise((resolve) =&gt; setTimeout(resolve, 1000));
+    }
+
+    expect(policeIncident).toBeDefined();
+    expect(policeIncident.type).toBe(&quot;suspicious_activity&quot;);
+    expect(policeIncident.status).toBe(&quot;reported&quot;);
+  });
+});
+</code></pre>
+<h2>Deployment Configuration</h2>
+<p>For the workshop, services are containerized using Docker and can be deployed locally using k3d, a lightweight Kubernetes distribution. This setup provides a realistic environment for participants while requiring minimal resources.</p>
+<h3>1. Docker Configuration</h3>
+<p>Each service includes a standardized Dockerfile:</p>
+<pre><code class="language-dockerfile"># services/sample/Dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy application code
+COPY . .
+
+# Build TypeScript
+RUN npm run build
+
+# Set environment variable
+ENV NODE_ENV=production
+
+# Expose port
+EXPOSE 3000
+
+# Start the service
+CMD [&quot;node&quot;, &quot;dist/index.js&quot;]
+</code></pre>
+<h3>2. Docker Compose for Local Development</h3>
+<p>For local development, a docker-compose.yml file orchestrates all services:</p>
+<pre><code class="language-yaml"># docker-compose.yml
+version: &quot;3.8&quot;
+
+services:
+  # Core infrastructure
+  api-gateway:
+    build: ./infrastructure/api-gateway
+    ports:
+      - &quot;8000:8000&quot;
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - iam-service
+      - service-registry
+
+  iam-service:
+    build: ./infrastructure/iam
+    ports:
+      - &quot;3001:3000&quot;
+    environment:
+      - NODE_ENV=development
+      - JWT_SECRET=workshop-secret-key
+
+  service-registry:
+    build: ./infrastructure/service-registry
+    ports:
+      - &quot;3002:3000&quot;
+    environment:
+      - NODE_ENV=development
+
+  # Sample service
+  sample-service:
+    build: ./services/sample
+    ports:
+      - &quot;3010:3000&quot;
+    environment:
+      - NODE_ENV=development
+      - SERVICE_REGISTRY_URL=http://service-registry:3000
+      - IAM_URL=http://iam-service:3000
+    depends_on:
+      - service-registry
+      - iam-service
+
+  # Emergency services
+  police-service:
+    build: ./services/emergency-services/police
+    ports:
+      - &quot;3011:3000&quot;
+    environment:
+      - NODE_ENV=development
+      - SERVICE_REGISTRY_URL=http://service-registry:3000
+      - IAM_URL=http://iam-service:3000
+    depends_on:
+      - service-registry
+      - iam-service
+
+  # Other services follow similar pattern...
+
+  # Mock third-party services for development
+  mock-pubsub:
+    image: messagebird/gcloud-pubsub-emulator
+    ports:
+      - &quot;8085:8085&quot;
+</code></pre>
+<h3>3. Kubernetes Deployment</h3>
+<p>For a more realistic deployment, k3d is used to create a local Kubernetes cluster:</p>
+<pre><code class="language-bash"># scripts/setup-k3d.sh
+#!/bin/bash
+
+# Create k3d cluster
+k3d cluster create city-services --api-port 6550 -p &quot;8000:80@loadbalancer&quot; --agents 2
+
+# Set kubectl context
+kubectl config use-context k3d-city-services
+
+# Apply Kubernetes manifests
+kubectl apply -f kubernetes/
+</code></pre>
+<p>Kubernetes manifests for each service:</p>
+<pre><code class="language-yaml"># kubernetes/sample-service.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-service
+  labels:
+    app: sample-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sample-service
+  template:
+    metadata:
+      labels:
+        app: sample-service
+    spec:
+      containers:
+        - name: sample-service
+          image: city-services/sample-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: &quot;production&quot;
+            - name: SERVICE_REGISTRY_URL
+              value: &quot;http://service-registry:3000&quot;
+            - name: IAM_URL
+              value: &quot;http://iam-service:3000&quot;
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sample-service
+spec:
+  selector:
+    app: sample-service
+  ports:
+    - port: 3000
+      targetPort: 3000
+</code></pre>
+<h3>4. Workshop Script for Environment Setup</h3>
+<p>To streamline setup for workshop participants, a setup script automates the process:</p>
+<pre><code class="language-bash"># scripts/setup-workshop.sh
+#!/bin/bash
+
+echo &quot;Setting up City Services Workshop Environment&quot;
+
+# Check prerequisites
+command -v docker &gt;/dev/null 2&gt;&amp;1 || { echo &quot;Docker is required but not installed. Aborting.&quot;; exit 1; }
+command -v k3d &gt;/dev/null 2&gt;&amp;1 || { echo &quot;k3d is required but not installed. Aborting.&quot;; exit 1; }
+command -v kubectl &gt;/dev/null 2&gt;&amp;1 || { echo &quot;kubectl is required but not installed. Aborting.&quot;; exit 1; }
+command -v node &gt;/dev/null 2&gt;&amp;1 || { echo &quot;Node.js is required but not installed. Aborting.&quot;; exit 1; }
+
+# Clone repository if not already done
+if [ ! -d &quot;city-services&quot; ]; then
+  git clone https://github.com/example/city-services-workshop.git city-services
+  cd city-services
+else
+  cd city-services
+  git pull
+fi
+
+# Install dependencies
+npm install
+
+# Build docker images
+docker-compose build
+
+# Set up k3d cluster
+./scripts/setup-k3d.sh
+
+# Import Docker images to k3d
+k3d image import city-services/api-gateway:latest city-services/iam-service:latest city-services/service-registry:latest city-services/sample-service:latest -c city-services
+
+# Verify setup
+echo &quot;Verifying setup...&quot;
+kubectl get pods
+echo &quot;Waiting for services to start...&quot;
+sleep 10
+kubectl get services
+
+echo &quot;Setup complete! Access the API Gateway at http://localhost:8000&quot;
+</code></pre>
+<h3>5. Service Mesh</h3>
+<p>For observability and more advanced networking features, a lightweight service mesh is included:</p>
+<pre><code class="language-yaml"># kubernetes/linkerd.yaml
+# Simplified Linkerd configuration for the workshop
+apiVersion: linkerd.io/v1alpha2
+kind: ServiceProfile
+metadata:
+  name: sample-service.default.svc.cluster.local
+  namespace: default
+spec:
+  routes:
+    - name: get-resources
+      condition:
+        method: GET
+        pathRegex: /api/v1/resources
+      responseClasses:
+        - condition:
+            status:
+              min: 200
+              max: 299
+          isSuccess: true
+    - name: create-resource
+      condition:
+        method: POST
+        pathRegex: /api/v1/resources
+      responseClasses:
+        - condition:
+            status:
+              min: 200
+              max: 299
+          isSuccess: true
+</code></pre>
+<p>This deployment configuration provides a realistic yet approachable environment for workshop participants to experience the complete API-first development lifecycle.</p>
+<h2>Conclusion</h2>
+<p>This walking skeleton of the City Services API-first workshop provides a comprehensive foundation for exploring API-first principles in a realistic setting. The implementation demonstrates key concepts including:</p>
+<ol>
+<li>
+<p><strong>Contract-First Development</strong> - All services begin with clear API specifications in OpenAPI 3.0 format before implementation begins.</p>
+</li>
+<li>
+<p><strong>Service Independence</strong> - Each city service operates independently but follows consistent patterns and communicates through well-defined interfaces.</p>
+</li>
+<li>
+<p><strong>Infrastructure as Code</strong> - All components, from the API gateway to the individual services, are defined in code and can be consistently deployed.</p>
+</li>
+<li>
+<p><strong>Testing Strategies</strong> - Multiple testing approaches ensure quality at all levels, from unit testing to end-to-end validation.</p>
+</li>
+<li>
+<p><strong>Developer Experience</strong> - Tools and scripts streamline the developer experience, making it accessible for workshop participants of varying skill levels.</p>
+</li>
+</ol>
+<h3>Limitations of the Walking Skeleton</h3>
+<p>This implementation intentionally simplifies certain aspects to focus on learning API-first principles:</p>
+<ol>
+<li>
+<p><strong>Authentication &amp; Authorization</strong> - A simplified OAuth service is provided rather than a production-grade implementation.</p>
+</li>
+<li>
+<p><strong>Persistence</strong> - Simple persistence layers are used instead of complex database schemas.</p>
+</li>
+<li>
+<p><strong>Error Handling</strong> - Basic error patterns are demonstrated without exhaustive error scenarios.</p>
+</li>
+<li>
+<p><strong>Performance Optimization</strong> - Services are designed for clarity rather than maximum performance.</p>
+</li>
+</ol>
+<h3>Next Steps for Workshop Development</h3>
+<p>To complete preparation for the workshop:</p>
+<ol>
+<li>
+<p><strong>Implement Sample Service</strong> - Fully implement the Sample Service as a reference example for participants.</p>
+</li>
+<li>
+<p><strong>Prepare Workshop Exercises</strong> - Develop guided exercises for each section of the workshop.</p>
+</li>
+<li>
+<p><strong>Create Documentation</strong> - Provide comprehensive documentation for each component.</p>
+</li>
+<li>
+<p><strong>Test Environment Setup</strong> - Verify that all components can be deployed consistently across different platforms.</p>
+</li>
+<li>
+<p><strong>Prepare Facilitator Guide</strong> - Create detailed guides for workshop facilitators with troubleshooting tips.</p>
+</li>
+</ol>
+<p>The walking skeleton provides a solid foundation for a successful API-first workshop, giving participants hands-on experience with modern API development patterns in a realistic city services ecosystem.</p>

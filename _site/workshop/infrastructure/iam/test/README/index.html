@@ -1,0 +1,86 @@
+<h1>IAM Service Tests</h1>
+<p>This directory contains tests for the IAM (Identity and Access Management) service used in the API-First City Workshop.</p>
+<h2>Test Structure</h2>
+<p>The tests are organized into the following categories:</p>
+<ol>
+<li>
+<p><strong>Unit Tests</strong> - Testing individual functions and components</p>
+<ul>
+<li><code>auth.test.ts</code>: Tests for the authentication utilities (token generation, verification)</li>
+<li><code>middleware.test.ts</code>: Tests for middleware functions</li>
+</ul>
+</li>
+<li>
+<p><strong>Integration Tests</strong> - Testing endpoint interactions</p>
+<ul>
+<li><code>server.test.ts</code>: Tests for the server endpoints with mocked dependencies</li>
+<li><code>integration.test.ts</code>: End-to-end tests with actual implementations</li>
+</ul>
+</li>
+<li>
+<p><strong>Setup Files</strong></p>
+<ul>
+<li><code>vitest.setup.ts</code>: Global test setup and configuration</li>
+<li><code>__mocks__/@city-services/common.ts</code>: Mocks for common package dependencies</li>
+</ul>
+</li>
+</ol>
+<h2>Running Tests</h2>
+<p>You can run the tests using the following commands:</p>
+<pre><code class="language-bash"># Run all tests
+yarn test
+
+# Run tests with coverage report
+yarn test:coverage
+
+# Run tests in watch mode (useful during development)
+yarn test:watch
+</code></pre>
+<h2>Coverage Requirements</h2>
+<p>The tests maintain the following coverage thresholds:</p>
+<ul>
+<li>Statements: 80%</li>
+<li>Branches: 75%</li>
+<li>Functions: 80%</li>
+<li>Lines: 80%</li>
+</ul>
+<h2>Using Vitest</h2>
+<p>This project uses Vitest for testing, which provides:</p>
+<ol>
+<li><strong>Fast Execution</strong>: Vitest is built on top of Vite and offers faster test runs</li>
+<li><strong>Modern Architecture</strong>: Uses the same configuration as your app (vitest.config.ts)</li>
+<li><strong>ESM Support</strong>: First-class support for ES Modules</li>
+<li><strong>Watch Mode</strong>: Efficient watch mode that updates tests instantly</li>
+<li><strong>Native Code Coverage</strong>: Built-in code coverage reporting via v8</li>
+</ol>
+<h3>Configuration</h3>
+<p>The Vitest configuration is maintained in the <code>vitest.config.ts</code> file at the project root. This includes:</p>
+<ul>
+<li>Test environment settings</li>
+<li>File inclusion/exclusion patterns</li>
+<li>Coverage configuration</li>
+<li>Module resolution and aliasing</li>
+</ul>
+<h2>Mocking Strategy</h2>
+<ol>
+<li><strong>Module Mocking</strong>: Vitest's <code>vi.mock()</code> is used to mock modules</li>
+<li><strong>Spy Functions</strong>: <code>vi.fn()</code> creates function spies to track calls</li>
+<li><strong>Environment Variables</strong>: Managed in the <code>beforeEach</code> and <code>afterEach</code> hooks</li>
+<li><strong>Integration Testing</strong>: The integration tests use dynamic imports to test real implementations</li>
+</ol>
+<h2>Adding New Tests</h2>
+<p>When adding new functionality to the IAM service, please follow these guidelines:</p>
+<ol>
+<li>Add unit tests for any new functions or utilities</li>
+<li>Add integration tests for any new endpoints</li>
+<li>Maintain the existing test structure</li>
+<li>Ensure the tests cover both success and error cases</li>
+</ol>
+<h2>Troubleshooting</h2>
+<p>If you encounter issues when running the tests:</p>
+<ol>
+<li>Make sure you have installed all dependencies (<code>yarn install</code>)</li>
+<li>Check that the test environment variables are properly set</li>
+<li>Verify that the mocks are correctly configured</li>
+<li>For ES Module issues, ensure imports have proper paths and file extensions where needed</li>
+</ol>

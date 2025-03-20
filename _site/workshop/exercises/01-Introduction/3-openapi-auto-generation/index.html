@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        code {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 0.2rem 0.4rem;
+        }
+        nav {
+            background-color: #f6f8fa;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 3px;
+        }
+        nav a {
+            margin-right: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+    </nav>
+    <main>
+        <h1>Leveraging OpenAPI for Code Generation</h1>
+<p>Now that we've built and tested our service, let's explore one of the most powerful aspects of the API-first approach: automatically generating code from your OpenAPI specification. This capability significantly accelerates development, ensures consistency between your API contract and implementation, and reduces the chance of errors.</p>
+<h2>The Power of Code Generation</h2>
+<p>When you design your API with OpenAPI, you're not just creating documentation - you're creating a machine-readable specification that can be used to generate:</p>
+<ul>
+<li><strong>Type definitions</strong>: Ensuring type safety throughout your application</li>
+<li><strong>API clients</strong>: For easy consumption of your service by other services</li>
+<li><strong>Server stubs</strong>: Providing structure for your implementation</li>
+<li><strong>Validation schemas</strong>: For request and response validation</li>
+<li><strong>Documentation</strong>: Interactive API documentation for developers</li>
+</ul>
+<p>Automating these aspects of development lets you focus on implementing business logic rather than boilerplate code, and it ensures that your implementation always matches your API contract.</p>
+<h2>Code Generation with @hey-api/openapi-ts</h2>
+<p>In our sample service, we're using <code>@hey-api/openapi-ts</code> to generate TypeScript types, clients, and validation schemas from our OpenAPI specification. This is a powerful tool that integrates well with TypeScript projects and offers several advantages over other libraries:</p>
+<ul>
+<li><strong>Comprehensive output</strong>: Generates not just types, but also clients, validation schemas, and more</li>
+<li><strong>Plugin architecture</strong>: Highly customizable through a plugin system</li>
+<li><strong>TypeScript-first</strong>: Built specifically for TypeScript ecosystems</li>
+<li><strong>Type-safe clients</strong>: Generates fully typed API clients</li>
+<li><strong>Integration with popular libraries</strong>: Built-in support for Zod, React, and more</li>
+<li><strong>Developer experience</strong>: Clean output with minimal boilerplate</li>
+</ul>
+<h3>Setting Up OpenAPI Code Generation</h3>
+<p>Let's walk through how to set up code generation for your city service:</p>
+<h4>1. Install the Required Dependencies</h4>
+<p>First, add the necessary dependencies to your project:</p>
+<pre><code class="language-bash">cd services/your-service-name
+npm install --save-dev @hey-api/openapi-ts @hey-api/client-fetch zod
+</code></pre>
+<p>This installs:</p>
+<ul>
+<li><code>@hey-api/openapi-ts</code>: The core code generation tool</li>
+<li><code>@hey-api/client-fetch</code>: A plugin for generating fetch-based API clients</li>
+<li><code>zod</code>: A TypeScript-first schema validation library</li>
+</ul>
+<h4>2. Create a Configuration File</h4>
+<p>Create a configuration file for <code>@hey-api/openapi-ts</code> in your service directory:</p>
+<pre><code class="language-bash">touch services/your-service-name/openapi-ts.config.ts
+</code></pre>
+<p>Add the following configuration:</p>
+<pre><code class="language-typescript">import { defineConfig, defaultPlugins } from '@hey-api/openapi-ts';
+
+export default defineConfig({
+  input: 'api/openapi.yaml', // Path to your OpenAPI specification
+  output: 'src/generated',   // Where to output generated files
+  plugins: [
+    ...defaultPlugins,
+    '@hey-api/client-fetch', // Generates fetch-based API clients
+    'zod',                   // Generates Zod validation schemas
+    {
+      enums: 'javascript',   // How to generate enums
+      name: '@hey-api/typescript',
+    },
+    {
+      name: '@hey-api/schemas',
+      type: 'json',          // Output schema format
+    },
+    {
+      name: '@hey-api/transformers',
+      dates: true            // Transform date strings to Date objects
+    }
+  ]
+});
+</code></pre>
+<p>This configuration tells the generator where to find your OpenAPI specification, where to output the generated files, and which plugins to use for generating different types of code.</p>
+<h4>3. Add a Generate Script</h4>
+<p>Add a script to your <code>package.json</code> to run the code generation:</p>
+<pre><code class="language-json">&quot;scripts&quot;: {
+  &quot;generate:api&quot;: &quot;openapi-ts&quot;,
+  &quot;build&quot;: &quot;yarn generate:api &amp;&amp; tsc -p tsconfig.json&quot;
+}
+</code></pre>
+<p>With this setup, you can run <code>npm run generate:api</code> to generate code from your OpenAPI specification, and it will automatically run as part of your build process.</p>
+<h3>What Gets Generated</h3>
+<p>When you run the code generation, you'll see several files appear in your <code>src/generated</code> directory:</p>
+<ul>
+<li><strong>types.gen.ts</strong>: TypeScript interfaces and types for your API models</li>
+<li><strong>zod.gen.ts</strong>: Zod schemas for validating requests and responses</li>
+<li><strong>client.gen.ts</strong>: A fetch-based API client for consuming your service</li>
+<li><strong>sdk.gen.ts</strong>: A higher-level SDK for working with your API</li>
+<li><strong>schemas.gen.ts</strong>: JSON schemas for your API models</li>
+<li><strong>transformers.gen.ts</strong>: Utility functions for transforming data</li>
+<li><strong>index.ts</strong>: A barrel file that exports all the generated types</li>
+</ul>
+<p>Each of these files serves a specific purpose in making your API easier to work with. Let's explore some of the key files in more detail:</p>
+<h4>types.gen.ts</h4>
+<p>This file contains TypeScript definitions for all the models defined in your OpenAPI specification. These types are fully compatible with TypeScript's type system and provide excellent IDE support.</p>
+<pre><code class="language-typescript">// Example of a generated type
+export interface Patrol {
+  id: string;
+  type: PatrolType;
+  status: PatrolStatus;
+  location: GeoLocation;
+  officerCount: number;
+  activeCall?: string;
+  lastUpdated: string;
+}
+
+export enum PatrolType {
+  CAR = 'CAR',
+  MOTORCYCLE = 'MOTORCYCLE',
+  BIKE = 'BIKE',
+  FOOT = 'FOOT'
+}
+
+export enum PatrolStatus {
+  AVAILABLE = 'AVAILABLE',
+  BUSY = 'BUSY',
+  OUT_OF_SERVICE = 'OUT_OF_SERVICE'
+}
+</code></pre>
+<h4>zod.gen.ts</h4>
+<p>This file contains Zod schemas that correspond to your API models. These schemas provide runtime validation that matches the constraints defined in your OpenAPI specification.</p>
+<pre><code class="language-typescript">// Example of a generated Zod schema
+export const PatrolSchema = z.object({
+  id: z.string(),
+  type: z.enum(['CAR', 'MOTORCYCLE', 'BIKE', 'FOOT']),
+  status: z.enum(['AVAILABLE', 'BUSY', 'OUT_OF_SERVICE']),
+  location: z.object({
+    latitude: z.number(),
+    longitude: z.number()
+  }),
+  officerCount: z.number().int().min(1),
+  activeCall: z.string().optional(),
+  lastUpdated: z.string().datetime()
+});
+</code></pre>
+<h4>client.gen.ts and sdk.gen.ts</h4>
+<p>These files provide type-safe ways to interact with your API. The client is a lower-level interface that maps directly to your API endpoints, while the SDK provides a more user-friendly interface.</p>
+<pre><code class="language-typescript">// Example of using the generated client
+const client = createClient({
+  baseUrl: 'http://localhost:3000'
+});
+
+// Type-safe API calls
+const patrols = await client.listPatrols();
+const nearestPatrol = await client.findNearestPatrol({
+  params: {
+    latitude: 40.7128,
+    longitude: -74.0060
+  }
+});
+</code></pre>
+<h3>Using the Generated Code</h3>
+<p>Let's look at how to use the generated code in your service implementation:</p>
+<h4>1. Import Types in Your Models</h4>
+<p>Instead of manually defining types, import them from the generated code:</p>
+<pre><code class="language-typescript">// src/models/patrol.ts
+import { Patrol, PatrolStatus, PatrolType } from '../generated';
+
+// You can now use these types throughout your service
+</code></pre>
+<h4>2. Use Zod Schemas for Validation</h4>
+<p>The generated Zod schemas provide runtime validation:</p>
+<pre><code class="language-typescript">// src/services/patrol-service.ts
+import { PatrolSchema } from '../generated/zod.gen';
+
+export const PatrolService = {
+  createPatrol(data: unknown): Patrol {
+    // Validate the input data against the schema
+    const validatedData = PatrolSchema.parse(data);
+    
+    // If validation passes, proceed with creating the patrol
+    return PatrolRepository.create(validatedData);
+  }
+};
+</code></pre>
+<h4>3. Use the Generated Client in Other Services</h4>
+<p>Other services can use the generated client to communicate with your service:</p>
+<pre><code class="language-typescript">// In another service that needs to call your service
+import { createClient } from '@city-services/police-service/src/generated';
+
+// Create a client for the police service
+const policeServiceClient = createClient({
+  baseUrl: 'http://localhost:3000' // Or get from service registry
+});
+
+// Use the client to make API calls
+const availablePatrols = await policeServiceClient.getAvailablePatrols();
+</code></pre>
+<p>This provides a type-safe way for services to communicate with each other.</p>
+<h2>Integrating with Express OpenAPI Validator</h2>
+<p>We've already set up Express OpenAPI Validator in our service, and it works perfectly with our generated code. The validator ensures that requests and responses conform to our API specification at runtime, while the generated types ensure type safety at compile time.</p>
+<pre><code class="language-typescript">// app.ts
+import { OpenAPIValidator } from 'express-openapi-validator';
+import { join } from 'path';
+
+// ...
+
+app.use(
+  OpenAPIValidator.middleware({
+    apiSpec: join(__dirname, '../api/openapi.yaml'),
+    validateRequests: true,
+    validateResponses: true
+  })
+);
+</code></pre>
+<p>With this setup, any request or response that doesn't match your API specification will be rejected with a helpful error message.</p>
+<h2>Benefits of Auto-Generation</h2>
+<p>Using code generation from your OpenAPI specification offers numerous benefits:</p>
+<ol>
+<li><strong>Type Safety</strong>: Catch errors at compile time rather than runtime</li>
+<li><strong>Consistency</strong>: Ensure your implementation matches your API contract</li>
+<li><strong>Productivity</strong>: Focus on business logic instead of boilerplate</li>
+<li><strong>Documentation</strong>: Generated code serves as living documentation</li>
+<li><strong>Maintainability</strong>: Change your API spec and regenerate code to update everything</li>
+<li><strong>Developer Experience</strong>: Better IDE support with autocomplete and type hints</li>
+<li><strong>Cross-Service Communication</strong>: Standardized, type-safe way for services to communicate</li>
+</ol>
+<h2>Alternative Libraries</h2>
+<p>While we're using <code>@hey-api/openapi-ts</code> in our sample project, there are several other libraries available for generating code from OpenAPI specifications:</p>
+<ul>
+<li><strong>openapi-generator</strong>: A comprehensive tool that supports multiple languages and frameworks, but has a steeper learning curve</li>
+<li><strong>swagger-codegen</strong>: The original code generator from Swagger (now OpenAPI), with broad language support but less modern TypeScript support</li>
+<li><strong>oazapfts</strong>: A TypeScript-focused generator with minimal dependencies, good for simple projects</li>
+<li><strong>openapi-typescript</strong>: Generates TypeScript types from OpenAPI specifications, focused only on types rather than clients</li>
+<li><strong>orval</strong>: Generates TypeScript clients with React Query or SWR integration, excellent for frontend applications</li>
+</ul>
+<p>Each tool has its strengths:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Languages</th>
+<th>Client Generation</th>
+<th>Schema Validation</th>
+<th>TypeScript Integration</th>
+<th>Learning Curve</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>@hey-api/openapi-ts</td>
+<td>TypeScript</td>
+<td>Yes</td>
+<td>Yes (Zod)</td>
+<td>Excellent</td>
+<td>Moderate</td>
+</tr>
+<tr>
+<td>openapi-generator</td>
+<td>Many</td>
+<td>Yes</td>
+<td>Varies by language</td>
+<td>Good</td>
+<td>Steep</td>
+</tr>
+<tr>
+<td>swagger-codegen</td>
+<td>Many</td>
+<td>Yes</td>
+<td>Varies by language</td>
+<td>Basic</td>
+<td>Steep</td>
+</tr>
+<tr>
+<td>oazapfts</td>
+<td>TypeScript</td>
+<td>Yes</td>
+<td>No</td>
+<td>Good</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>openapi-typescript</td>
+<td>TypeScript</td>
+<td>No</td>
+<td>No</td>
+<td>Good</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>orval</td>
+<td>TypeScript</td>
+<td>Yes</td>
+<td>No</td>
+<td>Good</td>
+<td>Moderate</td>
+</tr>
+</tbody>
+</table>
+<p>The best choice depends on your specific needs and technology stack. If you're working in a TypeScript ecosystem and want a comprehensive solution, <code>@hey-api/openapi-ts</code> is an excellent choice. For multi-language support, <code>openapi-generator</code> might be better. For frontend applications using React, <code>orval</code> could be more suitable.</p>
+<h2>Best Practices for Code Generation</h2>
+<p>To get the most out of OpenAPI code generation, follow these best practices:</p>
+<ol>
+<li>
+<p><strong>Keep Your API Specification as the Source of Truth</strong>: Always update your OpenAPI specification first, then regenerate code.</p>
+</li>
+<li>
+<p><strong>Don't Modify Generated Files</strong>: Treat generated files as read-only. If you need to customize behavior, extend the generated types rather than modifying them.</p>
+</li>
+<li>
+<p><strong>Version Your API Specification</strong>: Use semantic versioning for your API to manage changes.</p>
+</li>
+<li>
+<p><strong>Include Generation in Your Build Process</strong>: Ensure fresh code is generated with each build.</p>
+</li>
+<li>
+<p><strong>Write Tests Against Generated Types</strong>: This ensures your implementation correctly uses the generated code.</p>
+</li>
+<li>
+<p><strong>Document Customization Points</strong>: Note where you've extended or customized generated behavior.</p>
+</li>
+<li>
+<p><strong>Provide Generated Clients to API Consumers</strong>: Make it easy for other services to consume your API by sharing your generated clients.</p>
+</li>
+</ol>
+<h2>Example: Updating Your Service</h2>
+<p>Let's say you want to add a new endpoint to your patrol service. Here's the workflow:</p>
+<ol>
+<li><strong>Update Your OpenAPI Specification</strong>:</li>
+</ol>
+<pre><code class="language-yaml"># api/openapi.yaml
+paths:
+  # ... existing paths
+  /patrols/shifts:
+    get:
+      summary: Get patrol shift schedule
+      operationId: getPatrolShifts
+      responses:
+        '200':
+          description: Shift schedule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShiftSchedule'
+
+components:
+  schemas:
+    # ... existing schemas
+    ShiftSchedule:
+      type: object
+      properties:
+        shifts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shift'
+    
+    Shift:
+      type: object
+      required:
+        - id
+        - patrolId
+        - startTime
+        - endTime
+      properties:
+        id:
+          type: string
+        patrolId:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        notes:
+          type: string
+</code></pre>
+<ol start="2">
+<li><strong>Regenerate the Code</strong>:</li>
+</ol>
+<pre><code class="language-bash">npm run generate:api
+</code></pre>
+<ol start="3">
+<li><strong>Implement the New Endpoint</strong>:</li>
+</ol>
+<pre><code class="language-typescript">// src/controllers/patrol-controller.ts
+import { ShiftSchedule } from '../generated';
+
+// ... existing code
+
+// GET /patrols/shifts
+router.get('/shifts', async (req: Request, res: Response, next: NextFunction) =&gt; {
+  try {
+    const shifts = PatrolService.getShiftSchedule();
+    res.json(shifts);
+  } catch (error) {
+    next(error);
+  }
+});
+</code></pre>
+<ol start="4">
+<li><strong>Implement the Service Method</strong>:</li>
+</ol>
+<pre><code class="language-typescript">// src/services/patrol-service.ts
+import { ShiftSchedule } from '../generated';
+
+export const PatrolService = {
+  // ... existing methods
+  
+  getShiftSchedule(): ShiftSchedule {
+    // Implement the business logic
+    const shifts = ShiftRepository.getAllShifts();
+    return { shifts };
+  }
+};
+</code></pre>
+<p>With this workflow, you maintain consistency between your API specification and implementation while taking advantage of the generated types and validation.</p>
+<h2>Advanced Usage: Custom Transformations</h2>
+<p>One of the powerful features of <code>@hey-api/openapi-ts</code> is its ability to apply custom transformations to your generated code. This is useful for handling special cases or integrating with specific libraries.</p>
+<p>For example, you can configure it to:</p>
+<ul>
+<li>Transform date strings to Date objects automatically</li>
+<li>Add utility methods to all generated models</li>
+<li>Generate custom validation logic</li>
+<li>Integrate with specific frameworks like NestJS or Express</li>
+</ul>
+<p>Here's an example of a custom plugin configuration:</p>
+<pre><code class="language-typescript">// openapi-ts.config.ts
+import { defineConfig, defaultPlugins } from '@hey-api/openapi-ts';
+
+export default defineConfig({
+  input: 'api/openapi.yaml',
+  output: 'src/generated',
+  plugins: [
+    ...defaultPlugins,
+    {
+      name: '@hey-api/transformers',
+      dates: true,
+      customTransformers: {
+        // Custom transformer for GeoLocation objects
+        GeoLocation: {
+          import: { module: '../utils/geo', name: 'calculateDistance' },
+          code: (typeName, propertyNames) =&gt; `
+            distanceTo(other: ${typeName}): number {
+              return calculateDistance(
+                this.${propertyNames.latitude}, 
+                this.${propertyNames.longitude},
+                other.${propertyNames.latitude},
+                other.${propertyNames.longitude}
+              );
+            }
+          `
+        }
+      }
+    }
+  ]
+});
+</code></pre>
+<p>This would add a <code>distanceTo</code> method to all <code>GeoLocation</code> objects, making it easy to calculate distances between locations.</p>
+<h2>Conclusion</h2>
+<p>OpenAPI code generation is a powerful technique that embodies the API-first approach. By generating code from your API specification, you ensure consistency, improve productivity, and maintain a high level of quality in your service implementation.</p>
+<p>In our city services ecosystem, this approach is especially valuable as it ensures that services can reliably communicate with each other based on well-defined contracts. The <code>@hey-api/openapi-ts</code> library we've chosen provides an excellent balance of features, type safety, and developer experience, though other libraries are available depending on your specific needs.</p>
+<p>By leveraging this approach across all city services, you create a cohesive ecosystem where:</p>
+<ul>
+<li>All services speak the same language</li>
+<li>Type definitions are consistent across services</li>
+<li>API contracts are enforced at both compile time and runtime</li>
+<li>Developers can focus on implementing business logic rather than boilerplate</li>
+<li>Changes to APIs are explicit and tracked in the OpenAPI specification</li>
+</ul>
+<p>Now that you've learned about OpenAPI code generation, you can apply this technique to all your city services, creating a robust and maintainable ecosystem of services that work together seamlessly.</p>
+<p>Ready to move on? Proceed to the next exercise, where we'll explore how to connect multiple city services together using the API-first approach: <a href="../02-1-introduction">Service Implementation - Introductoin</a></p>
+
+    </main>
+</body>
+</html>

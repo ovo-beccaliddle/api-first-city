@@ -1,0 +1,96 @@
+<h1>City Services Event Bus</h1>
+<p>This module provides event bus functionality for the city services architecture using Google Cloud Pub/Sub.</p>
+<h2>Local Development</h2>
+<p>For local development, a Pub/Sub emulator is provided via Docker Compose. This allows you to develop and test event-based interactions without needing a real Google Cloud project.</p>
+<h3>Starting the Emulator</h3>
+<p>Start the Pub/Sub emulator using the included Docker Compose file:</p>
+<pre><code class="language-bash">cd workshop/infrastructure/event-bus
+docker-compose up -d
+</code></pre>
+<p>This will start:</p>
+<ol>
+<li>The Google Cloud Pub/Sub emulator on port 8085</li>
+<li>A setup container that creates the default topics</li>
+</ol>
+<h3>Using in Services</h3>
+<p>To use the event bus in your services, you need to set the following environment variables:</p>
+<pre><code>PUBSUB_EMULATOR_HOST=localhost:8085
+PUBSUB_PROJECT_ID=city-services
+</code></pre>
+<p>In Docker Compose, these are automatically set for services that need to interact with the event bus.</p>
+<h2>API Usage</h2>
+<h3>Publishing Events</h3>
+<pre><code class="language-typescript">import { EventBus } from '@city-services/event-bus';
+
+// Create an event bus client
+const eventBus = new EventBus();
+
+// Publish an event
+await eventBus.publisher.publish(
+  'sample.resources.created',
+  {
+    resourceId: '123',
+    name: 'Example Resource',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    // Optional attributes
+    priority: 'high',
+    origin: 'sample-service',
+  }
+);
+</code></pre>
+<h3>Subscribing to Events</h3>
+<pre><code class="language-typescript">import { EventBus } from '@city-services/event-bus';
+
+// Create an event bus client
+const eventBus = new EventBus();
+
+// Subscribe to an event
+await eventBus.subscriber.subscribe(
+  'my-service-name',
+  'sample.resources.created',
+  async (message, data) =&gt; {
+    // Process the message
+    console.log('Resource created:', data);
+
+    // The message is automatically acknowledged after this handler completes
+    // If an error is thrown, the message will be nacked and redelivered
+  }
+);
+
+// Close subscriptions on shutdown
+process.on('SIGTERM', async () =&gt; {
+  await eventBus.close();
+  process.exit(0);
+});
+</code></pre>
+<h2>Event Topics</h2>
+<p>The following standard topics are created automatically:</p>
+<h3>Emergency Services</h3>
+<ul>
+<li><code>emergency.incidents.reported</code></li>
+<li><code>emergency.incidents.updated</code></li>
+<li><code>emergency.incidents.resolved</code></li>
+</ul>
+<h3>Utility Services</h3>
+<ul>
+<li><code>utilities.outages.reported</code></li>
+<li><code>utilities.maintenance.scheduled</code></li>
+</ul>
+<h3>Transportation Services</h3>
+<ul>
+<li><code>transportation.traffic.congestion</code></li>
+<li><code>transportation.public-transit.delays</code></li>
+</ul>
+<h3>Citizen Services</h3>
+<ul>
+<li><code>citizen.requests.submitted</code></li>
+<li><code>citizen.permits.approved</code></li>
+</ul>
+<h3>Sample Service</h3>
+<ul>
+<li><code>sample.resources.created</code></li>
+<li><code>sample.resources.updated</code></li>
+<li><code>sample.resources.deleted</code></li>
+</ul>

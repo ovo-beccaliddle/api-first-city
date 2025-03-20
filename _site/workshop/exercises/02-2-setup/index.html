@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        code {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 0.2rem 0.4rem;
+        }
+        nav {
+            background-color: #f6f8fa;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 3px;
+        }
+        nav a {
+            margin-right: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+    </nav>
+    <main>
+        <h1>Setting Up Your City Service</h1>
+<p>Now that you understand what we're building, let's get our hands dirty! 🧰</p>
+<h2>1. Exploring the Sample Service</h2>
+<p>We've prepared a sample service that demonstrates our recommended patterns and structure. This is your reference point throughout the exercise, so let's take a few minutes to explore it.</p>
+<h3>File Structure</h3>
+<p>Navigate to the sample service directory:</p>
+<pre><code class="language-bash">cd services/sample
+</code></pre>
+<p>Take a look around. You'll notice the directory structure matches what we outlined in the introduction:</p>
+<pre><code>services/sample/
+├── api/                      # API specification
+│   └── openapi.yaml          # OpenAPI definition
+├── src/                      # Source code
+│   ├── models/               # Data models (TypeScript interfaces)
+│   │   └── sample.ts         # Sample resource model
+│   ├── repositories/         # Data access layer
+│   │   └── sample-repository.ts  # In-memory storage and CRUD operations
+│   ├── services/             # Business logic
+│   │   └── sample-service.ts # Service methods implementing business rules
+│   ├── controllers/          # API handlers
+│   │   └── sample-controller.ts  # Express route handlers
+│   ├── middleware/           # Express middleware
+│   │   ├── error-handler.ts  # Global error handling
+│   │   └── openapi.ts        # OpenAPI validation middleware
+│   └── index.ts              # Main application entry point
+├── package.json              # Dependencies and scripts
+└── tsconfig.json             # TypeScript configuration
+</code></pre>
+<h3>Key Files to Review</h3>
+<p>Let's look at some of the key files to understand how they work together:</p>
+<ol>
+<li>
+<p><strong>api/openapi.yaml</strong>: This defines the API contract, with endpoints, request/response schemas, and examples.</p>
+</li>
+<li>
+<p><strong>src/models/sample.ts</strong>: TypeScript interfaces matching the schemas in the API spec.</p>
+</li>
+<li>
+<p><strong>src/repositories/sample-repository.ts</strong>: Simple in-memory storage with methods to create, read, update, and delete resources.</p>
+</li>
+<li>
+<p><strong>src/services/sample-service.ts</strong>: Business logic that uses the repository layer and implements service-specific rules.</p>
+</li>
+<li>
+<p><strong>src/controllers/sample-controller.ts</strong>: Express route handlers that validate requests, call service methods, and format responses.</p>
+</li>
+<li>
+<p><strong>src/middleware/openapi.ts</strong>: Configures the OpenAPI validator middleware that ensures all requests and responses conform to the API spec.</p>
+</li>
+<li>
+<p><strong>src/index.ts</strong>: Puts everything together - sets up Express, registers middleware and routes, and starts the server.</p>
+</li>
+</ol>
+<p>Take a few minutes to look at these files to understand how they work together in the API-first approach.</p>
+<h2>2. Setting Up Your Service</h2>
+<p>Now that you've explored the sample, let's set up your own service structure. We'll create the directory structure and copy over some boilerplate files to save time.</p>
+<h3>Create Your Project Directory</h3>
+<p>First, create a directory for your service. Replace <code>your-service-name</code> with the actual name of your service (e.g., <code>police</code>, <code>fire</code>, <code>power-plant</code>):</p>
+<pre><code class="language-bash">mkdir -p services/your-service-name
+</code></pre>
+<h3>Set Up the Project Structure</h3>
+<p>Create the basic directory structure for your source code:</p>
+<pre><code class="language-bash">mkdir -p services/your-service-name/src/{models,repositories,services,controllers,middleware}
+mkdir -p services/your-service-name/api
+</code></pre>
+<h3>Copy Configuration Files</h3>
+<p>Copy the basic configuration files from the sample project:</p>
+<pre><code class="language-bash"># Copy package.json and modify it for your service
+cp services/sample/package.json services/your-service-name/
+sed -i '' &quot;s/sample-service/your-service-name/g&quot; services/your-service-name/package.json
+
+# Copy TypeScript configuration
+cp services/sample/tsconfig.json services/your-service-name/
+
+# Copy any build or utility scripts
+cp -r services/sample/scripts services/your-service-name/ 2&gt;/dev/null || mkdir -p services/your-service-name/scripts
+</code></pre>
+<h3>Copy Your API Specification</h3>
+<p>If you completed Exercise 1, you should already have an OpenAPI specification for your service. Copy it to the api directory:</p>
+<pre><code class="language-bash"># If you already have an OpenAPI spec from Exercise 1
+cp your-openapi-spec.yaml services/your-service-name/api/openapi.yaml
+
+# Or if you need to create a new one, you can copy the sample and modify it
+cp services/sample/api/openapi.yaml services/your-service-name/api/
+</code></pre>
+<h3>Copy Middleware Files</h3>
+<p>The middleware code is mostly reusable, so let's copy it from the sample:</p>
+<pre><code class="language-bash">cp services/sample/src/middleware/* services/your-service-name/src/middleware/
+</code></pre>
+<h3>Create a Basic Index.ts File</h3>
+<p>Create a minimal <code>index.ts</code> file to start with:</p>
+<pre><code class="language-bash">cat &gt; services/your-service-name/src/index.ts &lt;&lt; EOF
+import express from 'express';
+import cors from 'cors';
+import { json } from 'body-parser';
+import { OpenAPIValidator } from 'express-openapi-validator';
+import { join } from 'path';
+import errorHandler from './middleware/error-handler';
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(json());
+
+// Serve OpenAPI spec
+app.use('/api-docs', express.static(join(__dirname, '../api')));
+
+// OpenAPI validation middleware
+app.use(
+  OpenAPIValidator.middleware({
+    apiSpec: join(__dirname, '../api/openapi.yaml'),
+    validateRequests: true,
+    validateResponses: true
+  })
+);
+
+// Routes will be added here
+
+// Error handling middleware
+app.use(errorHandler);
+
+// Start server
+app.listen(port, () =&gt; {
+  console.log(\`🚀 \${process.env.SERVICE_NAME || 'Your service'} running at http://localhost:\${port}\`);
+  console.log(\`📚 API documentation at http://localhost:\${port}/api-docs\`);
+});
+EOF
+</code></pre>
+<h3>Install Dependencies</h3>
+<p>Now, let's install the dependencies needed for your service:</p>
+<pre><code class="language-bash">cd services/your-service-name
+npm install
+</code></pre>
+<p>This will install all the dependencies specified in the package.json file, including Express, TypeScript, OpenAPI validator, and other utilities.</p>
+<h2>3. Understanding Your Service's Resources</h2>
+<p>Before we start implementing the code, take a moment to think about your service's main resources based on your API specification. For example:</p>
+<ul>
+<li><strong>Police Service</strong>: Patrols, Officers, Emergency Calls</li>
+<li><strong>Fire Service</strong>: Fire Trucks, Firefighters, Emergency Calls</li>
+<li><strong>Power Plant</strong>: Energy Production, Distribution Points, Usage Metrics</li>
+<li><strong>Traffic Cameras</strong>: Cameras, Violations, Traffic Observations</li>
+</ul>
+<p>Identify your main resources and the operations you'll need to implement for each. This will guide your implementation in the following sections.</p>
+<h2>4. Next Steps</h2>
+<p>Now that your project structure is set up, you're ready to start implementing your service's specific functionality. In the next section, we'll implement the data models that match your API schemas.</p>
+<p>Ready to continue? Head over to <a href="./02-3-models">Implementing Your Models</a></p>
+
+    </main>
+</body>
+</html>

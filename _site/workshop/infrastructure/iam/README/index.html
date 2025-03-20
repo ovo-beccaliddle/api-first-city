@@ -1,0 +1,61 @@
+<h1>Identity and Access Management (IAM) Service</h1>
+<p>This service handles authentication and authorization for all city services in the API-First City project.</p>
+<h2>Features</h2>
+<ul>
+<li>User authentication with JWT tokens</li>
+<li>Token verification middleware</li>
+<li>Refresh token management</li>
+<li>Integration with other microservices</li>
+</ul>
+<h2>Getting Started</h2>
+<h3>Prerequisites</h3>
+<ul>
+<li>Node.js 18+</li>
+<li>Yarn</li>
+</ul>
+<h3>Installation</h3>
+<pre><code class="language-bash">yarn install
+</code></pre>
+<h3>Development</h3>
+<pre><code class="language-bash">yarn dev
+</code></pre>
+<h3>Build</h3>
+<pre><code class="language-bash">yarn build
+</code></pre>
+<h3>Running</h3>
+<pre><code class="language-bash">yarn start
+</code></pre>
+<h2>Testing</h2>
+<p>The service uses Vitest for testing. See the <a href="./test/README.md">testing documentation</a> for details.</p>
+<pre><code class="language-bash"># Run all tests
+yarn test
+
+# Run tests with coverage
+yarn test:coverage
+
+# Run tests in watch mode
+yarn test:watch
+
+# Run tests with UI
+yarn test:ui
+</code></pre>
+<h2>Environment Variables</h2>
+<p>Create a <code>.env</code> file in the root of the service with the following variables:</p>
+<pre><code>PORT=3000
+JWT_SECRET=your_jwt_secret
+TOKEN_EXPIRATION=1h
+REFRESH_TOKEN_EXPIRATION=7d
+</code></pre>
+<h2>Project Structure</h2>
+<pre><code>src/
+  ├── auth.ts        # Authentication utilities
+  ├── middleware.ts  # Express middlewares
+  ├── server.ts      # Express server setup
+  └── index.ts       # Entry point
+test/
+  ├── __mocks__/     # Test mocks
+  ├── unit/          # Unit tests
+  ├── integration/   # Integration tests
+  └── README.md      # Testing documentation
+dist/                # Compiled output
+</code></pre>

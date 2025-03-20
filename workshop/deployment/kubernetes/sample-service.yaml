@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-service
+  labels:
+    app: sample-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sample-service
+  template:
+    metadata:
+      labels:
+        app: sample-service
+    spec:
+      containers:
+      - name: sample-service
+        image: city-services-sample-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: SERVICE_REGISTRY_URL
+          value: "http://service-registry:3000"
+        - name: IAM_URL
+          value: "http://iam-service:3000"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        resources:
+          limits:
+            cpu: "0.5"
+            memory: "512Mi"
+          requests:
+            cpu: "0.1"
+            memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sample-service
+spec:
+  selector:
+    app: sample-service
+  ports:
+  - port: 3000
+    targetPort: 3000 

@@ -1,0 +1,620 @@
+<h1>API First Workshop: City Services Technical Implementation Guide</h1>
+<h2>Overview</h2>
+<p>This document outlines the comprehensive implementation plan for the &quot;API First&quot; workshop using a City Services metaphor. The workshop is designed to provide hands-on experience for both Engineering and Product teams in applying API-first principles to develop cohesive, well-designed APIs that function as products.</p>
+<p>The technical implementation will serve as the foundation for the workshop, enabling participants to engage with concrete examples while learning abstract principles of API-first development.</p>
+<h2>Workshop Structure</h2>
+<p>The workshop runs for approximately 240 minutes, broken down into several key sections:</p>
+<ol>
+<li>
+<p><strong>Requirements &amp; Design (100 mins)</strong></p>
+<ul>
+<li>Introduction to API First principles</li>
+<li>Designing APIs as Products</li>
+<li>Collaborative exercises for both Engineering and Product teams</li>
+</ul>
+</li>
+<li>
+<p><strong>Implementation &amp; Lifecycle (100 mins)</strong></p>
+<ul>
+<li>Building for Change</li>
+<li>Testing strategies</li>
+<li>Versioning and compatibility</li>
+<li>Monitoring and feedback loops</li>
+</ul>
+</li>
+<li>
+<p><strong>Open Space (90 mins)</strong> - For exploration and questions</p>
+</li>
+</ol>
+<h2>City Services Metaphor</h2>
+<p>The workshop uses a city metaphor to illustrate the concept of connected but independent services:</p>
+<ul>
+<li>Different city departments represent distinct APIs/services</li>
+<li>City infrastructure represents shared components and patterns</li>
+<li>Citizens represent API consumers with varying needs</li>
+<li>City planning represents the API-first approach</li>
+</ul>
+<p>This metaphor provides an intuitive understanding of domain boundaries while offering opportunities for exploring service interactions.</p>
+<h2>Technical Implementation Requirements</h2>
+<h3>Project Structure</h3>
+<p>The technical implementation will be a modular monorepo with the following structure:</p>
+<pre><code>city-services/
+├── infrastructure/
+│   ├── api-gateway/
+│   └── service-registry/
+├── common/
+│   ├── models/
+│   │   ├── sample/
+│   │   ├── (...)police/
+│   │   ├── (...)fire/
+│   │   ├── (...)ambulance/
+│   ├── errors/
+│   │   ├── sample/
+│   │   ├── (...)police/
+│   │   ├── (...)fire/
+│   │   ├── (...)ambulance/
+│   ├── logging/
+│   │   ├── sample/
+│   │   ├── (...)police/
+│   │   ├── (...)fire/
+│   │   ├── (...)ambulance/
+│   └── testing/
+│   │   ├── sample/
+│   │   ├── (...)police/
+│   │   ├── (...)fire/
+│   │   ├── (...)ambulance/
+├── services/
+│   │   ├── sample/
+│   │   ├── emergency-services/
+│   │   │   ├── (...)police/
+│   │   │   ├── (...)fire/
+│   │   │   └── (...)ambulance/
+│   │   ├── utilities/
+│   │   │   └── (...)water/
+│   │   │   └── (...)electric/
+│   │   │   └── (...)waste/
+│   │   └── transportation/
+│   │       ├── traffic/
+│   │       └── public-transit/
+│   └── citizen-services/
+│       ├── requests/
+│       └── permits/
+└── docs/
+</code></pre>
+<h3>Technology Stack</h3>
+<p>The base technology stack should be accessible to a wide range of developers while demonstrating best practices:</p>
+<ol>
+<li>
+<p><strong>Core Technologies</strong></p>
+<ul>
+<li>Node.js (v20+) with TypeScript</li>
+<li>Express.js for API implementation</li>
+<li>OpenAPI 3.0 for contract definition</li>
+<li>Jest for testing</li>
+<li>Docker for containerization</li>
+<li>k3d for deployment</li>
+</ul>
+</li>
+<li>
+<p><strong>Supporting Tools</strong></p>
+<ul>
+<li>Swagger UI for API documentation and exploration</li>
+<li>Prism for API mocking</li>
+<li>ESLint and Prettier for code quality</li>
+<li>GitHub Actions or similar for CI/CD examples</li>
+</ul>
+</li>
+</ol>
+<h3>Service Templates</h3>
+<p>Each service will follow a consistent pattern to reinforce best practices:</p>
+<pre><code>service-name/
+├── api/
+│   ├── openapi.yaml       # API contract definition
+│   └── examples/          # Request/response examples
+├── src/
+│   ├── controllers/       # Route handlers
+│   ├── services/          # Business logic
+│   ├── models/            # Domain models
+│   ├── repositories/      # Data access
+│   └── middleware/        # Custom middleware
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── contract/          # Contract tests
+├── Dockerfile
+└── package.json
+</code></pre>
+<h3>Core API Design Patterns to Demonstrate</h3>
+<p>The implementation should showcase these essential API-first patterns:</p>
+<ol>
+<li>
+<p><strong>Contract-First Development</strong></p>
+<ul>
+<li>OpenAPI specifications written before implementation</li>
+<li>Generated API documentation</li>
+<li>Contract validation middleware</li>
+</ul>
+</li>
+<li>
+<p><strong>Resource Modeling</strong></p>
+<ul>
+<li>RESTful resource design</li>
+<li>Clear resource relationships</li>
+<li>Consistent naming conventions</li>
+</ul>
+</li>
+<li>
+<p><strong>Versioning Strategy</strong></p>
+<ul>
+<li>URL or header-based versioning examples</li>
+<li>Backward compatibility pattern</li>
+<li>API deprecation approach</li>
+</ul>
+</li>
+<li>
+<p><strong>Error Handling</strong></p>
+<ul>
+<li>Standardized error format</li>
+<li>Meaningful error codes</li>
+<li>Comprehensive error documentation</li>
+</ul>
+</li>
+<li>
+<p><strong>Security Patterns</strong></p>
+<ul>
+<li>Authentication mechanisms</li>
+<li>Authorization models</li>
+<li>API key management</li>
+</ul>
+</li>
+<li>
+<p><strong>Pagination and Filtering</strong></p>
+<ul>
+<li>Cursor or offset-based pagination</li>
+<li>Filtering parameters</li>
+<li>Sorting options</li>
+</ul>
+</li>
+<li>
+<p><strong>Testing Strategies</strong></p>
+<ul>
+<li>Unit testing controllers and services</li>
+<li>Integration testing APIs</li>
+<li>Contract testing between services</li>
+</ul>
+</li>
+</ol>
+<h2>Example Services in Detail</h2>
+<h3>Emergency Services: Police Department</h3>
+<p>This example service will be fully implemented to demonstrate the complete pattern:</p>
+<h4>OpenAPI Definition (police/api/openapi.yaml)</h4>
+<pre><code class="language-yaml">openapi: 3.0.0
+info:
+  title: Police Department API
+  version: 1.0.0
+  description: API for city police department services
+paths:
+  /incidents:
+    get:
+      summary: List incidents
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [reported, in-progress, resolved]
+        - name: neighborhood
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of incidents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: &quot;#/components/schemas/Incident&quot;
+    post:
+      summary: Report a new incident
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: &quot;#/components/schemas/IncidentReport&quot;
+      responses:
+        201:
+          description: Incident created
+          content:
+            application/json:
+              schema:
+                $ref: &quot;#/components/schemas/Incident&quot;
+components:
+  schemas:
+    Incident:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [theft, vandalism, noise, traffic, other]
+        location:
+          $ref: &quot;#/components/schemas/Location&quot;
+        status:
+          type: string
+          enum: [reported, in-progress, resolved]
+        reportedAt:
+          type: string
+          format: date-time
+        description:
+          type: string
+      required:
+        - id
+        - type
+        - location
+        - status
+        - reportedAt
+    IncidentReport:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [theft, vandalism, noise, traffic, other]
+        location:
+          $ref: &quot;#/components/schemas/Location&quot;
+        description:
+          type: string
+      required:
+        - type
+        - location
+    Location:
+      type: object
+      properties:
+        address:
+          type: string
+        neighborhood:
+          type: string
+        coordinates:
+          type: object
+          properties:
+            latitude:
+              type: number
+              format: float
+            longitude:
+              type: number
+              format: float
+          required:
+            - latitude
+            - longitude
+      required:
+        - address
+        - neighborhood
+</code></pre>
+<h4>Implementation Highlights</h4>
+<p>The implementation will demonstrate:</p>
+<ol>
+<li>
+<p><strong>Separation of Concerns</strong></p>
+<ul>
+<li>Controllers handle request/response formatting</li>
+<li>Services implement business logic</li>
+<li>Repositories manage data access</li>
+</ul>
+</li>
+<li>
+<p><strong>Integration with Other Services</strong></p>
+<ul>
+<li>Example of calling Emergency Services API</li>
+<li>Event publication for cross-service notifications</li>
+</ul>
+</li>
+<li>
+<p><strong>Testing Examples</strong></p>
+<ul>
+<li>Unit tests for business logic</li>
+<li>API tests validating against the OpenAPI spec</li>
+<li>Mock integration tests for third-party dependencies</li>
+</ul>
+</li>
+</ol>
+<h2>Service Implementation Framework</h2>
+<p>Rather than specifying the exact implementation details for each potential city service, the workshop will provide a framework that allows teams to develop their assigned service within the city ecosystem. Each team will work from a base sample service that can be extended according to the needs of their particular city department.</p>
+<h3>Sample Service Template</h3>
+<p>The sample service provides a fully-functional foundation that demonstrates key API-first principles. Participants will:</p>
+<ol>
+<li>Clone or generate a new service based on this sample</li>
+<li>Adapt it to fit their assigned city department</li>
+<li>Define domain-specific resources and operations</li>
+<li>Implement required business logic</li>
+<li>Connect with relevant services in the city ecosystem</li>
+</ol>
+<p>Realistically, as the tasks are designed to be thin, a majority of these &quot;mappings&quot; will be designed up front (the inter-service communications) - but with a good enough pattern, these can be reproduced.</p>
+<h3>City Service Categories</h3>
+<p>Teams will be assigned to different categories of city services, each with their own domain focus but following consistent API-first principles:</p>
+<ol>
+<li>
+<p><strong>Emergency Services</strong></p>
+<ul>
+<li>Police, Fire, Ambulance</li>
+<li>Focus on incident response and management</li>
+<li>Event-driven communication patterns</li>
+</ul>
+</li>
+<li>
+<p><strong>Utilities</strong></p>
+<ul>
+<li>Water, Electric, Waste Management</li>
+<li>Focus on resource monitoring and management</li>
+<li>Versioning and evolution patterns</li>
+</ul>
+</li>
+<li>
+<p><strong>Transportation</strong></p>
+<ul>
+<li>Traffic Management, Public Transit</li>
+<li>Focus on real-time data and status updates</li>
+<li>Integration with other city services</li>
+</ul>
+</li>
+<li>
+<p><strong>Citizen Services</strong></p>
+<ul>
+<li>Permit Applications, Service Requests</li>
+<li>Focus on workflow and status tracking</li>
+<li>Authentication and authorization patterns</li>
+</ul>
+</li>
+</ol>
+<h3>Service Integration Patterns</h3>
+<p>The workshop will emphasize several integration patterns that connect the various city services:</p>
+<ol>
+<li>
+<p><strong>Event-Based Communication</strong></p>
+<ul>
+<li>Services publish events when significant state changes occur</li>
+<li>Interested services subscribe to relevant events</li>
+<li>Example: Police publishes &quot;incident reported&quot; events that Traffic Management consumes</li>
+</ul>
+</li>
+<li>
+<p><strong>Direct API Calls</strong></p>
+<ul>
+<li>Services call other service APIs when immediate information is needed</li>
+<li>Standard patterns for error handling and retry logic</li>
+<li>Example: Citizen Services calls Utilities APIs to check service availability</li>
+</ul>
+</li>
+<li>
+<p><strong>Shared Resources</strong></p>
+<ul>
+<li>Common domain objects used across multiple services</li>
+<li>Consistent naming and structure</li>
+<li>Example: Location information used by multiple city services</li>
+</ul>
+</li>
+</ol>
+<h2>BONUS: City Dashboard: Workshop Finale</h2>
+<p>A central component of the workshop is the City Dashboard, which provides a visual representation of all the services built by participants. This dashboard creates a compelling finale that demonstrates how individual services combine to form a functioning ecosystem.</p>
+<h3>Dashboard Functionality</h3>
+<p>The City Dashboard provides:</p>
+<ol>
+<li>
+<p><strong>Service Discovery and Visualization</strong></p>
+<ul>
+<li>Automatic detection of running services</li>
+<li>Visual representation of each service on a city map</li>
+<li>&quot;Lighting up&quot; parts of the city as services come online</li>
+</ul>
+</li>
+<li>
+<p><strong>Service Health and Status</strong></p>
+<ul>
+<li>Real-time health checks for all services</li>
+<li>Status indicators for key functionality</li>
+<li>Visual alerts for service issues</li>
+</ul>
+</li>
+<li>
+<p><strong>Inter-Service Communication Visualization</strong></p>
+<ul>
+<li>Visual representation of API calls between services</li>
+<li>Event publication and subscription flows</li>
+<li>Data movement throughout the city</li>
+</ul>
+</li>
+<li>
+<p><strong>Documentation Access</strong></p>
+<ul>
+<li>Centralized access to all service API documentation</li>
+<li>Ability to explore available endpoints</li>
+<li>Testing interface for service APIs</li>
+</ul>
+</li>
+</ol>
+<h3>Network Infrastructure Requirements</h3>
+<p>For the City Dashboard to provide a seamless experience, the workshop requires a dedicated network environment:</p>
+<ol>
+<li>
+<p><strong>Dedicated Workshop Network</strong></p>
+<ul>
+<li>SSID: &quot;CityAPI-Workshop&quot; with simple password access</li>
+<li>Isolated network segment (192.168.100.0/24) with DHCP enabled</li>
+<li>Local DNS server configured to resolve <code>.city.local</code> domain</li>
+<li>Multicast DNS (mDNS) traffic allowed for service discovery</li>
+</ul>
+</li>
+<li>
+<p><strong>Zero-Configuration Service Discovery</strong></p>
+<ul>
+<li>Automatic service registration with the dashboard</li>
+<li>No manual configuration required by participants</li>
+<li>Services become visible on the dashboard within seconds of starting</li>
+</ul>
+</li>
+<li>
+<p><strong>Central Dashboard Access</strong></p>
+<ul>
+<li>Dashboard accessible via <code>city-hall.city.local</code></li>
+<li>Services accessible via <code>[service-name].service.city.local</code></li>
+<li>Consistent DNS resolution throughout the workshop</li>
+</ul>
+</li>
+</ol>
+<h3>Participant Experience</h3>
+<p>From a participant perspective, the dashboard experience unfolds as follows:</p>
+<ol>
+<li>Connect to the workshop WiFi network</li>
+<li>Implement their assigned service using the provided template</li>
+<li>Start their service locally on their machine</li>
+<li>Watch as their service automatically appears on the central dashboard</li>
+<li>Observe interactions with other city services as they come online</li>
+<li>Experience the final &quot;fully illuminated city&quot; as all services become operational</li>
+</ol>
+<h2>Workshop Implementation Plan</h2>
+<h3>Pre-Workshop Preparation</h3>
+<ol>
+<li>
+<p><strong>Technical Environment Setup</strong></p>
+<ul>
+<li>Prepare the base repository with sample service</li>
+<li>Configure the network infrastructure</li>
+<li>Set up the City Dashboard</li>
+<li>Test end-to-end functionality</li>
+</ul>
+</li>
+<li>
+<p><strong>Participant Materials</strong></p>
+<ul>
+<li>Create workshop guides with step-by-step instructions</li>
+<li>Prepare service-specific briefs for each team</li>
+<li>Document API design patterns and best practices</li>
+<li>Provide troubleshooting guides</li>
+</ul>
+</li>
+<li>
+<p><strong>Facilitator Preparation</strong></p>
+<ul>
+<li>Train facilitators on the technical implementation</li>
+<li>Prepare discussion guides for key concepts</li>
+<li>Create checkpoint criteria for progress tracking</li>
+<li>Develop contingency plans for technical issues</li>
+</ul>
+</li>
+</ol>
+<h3>Workshop Delivery Flow</h3>
+<p>The technical implementation supports the workshop flow as follows:</p>
+<ol>
+<li>
+<p><strong>Introduction and Setup (30 mins)</strong></p>
+<ul>
+<li>Overview of API-first principles</li>
+<li>Introduction to the City Services metaphor</li>
+<li>Environment setup and verification</li>
+<li>Team assignments and service briefs</li>
+</ul>
+</li>
+<li>
+<p><strong>Requirements and Design Phase (70 mins)</strong></p>
+<ul>
+<li>Analysis of existing service APIs</li>
+<li>Domain modeling for assigned service</li>
+<li>API contract design using OpenAPI</li>
+<li>Review and validation of contracts</li>
+</ul>
+</li>
+<li>
+<p><strong>Implementation Phase (70 mins)</strong></p>
+<ul>
+<li>Service implementation based on API contract</li>
+<li>Unit and integration testing</li>
+<li>Connection with other city services</li>
+<li>Documentation and example creation</li>
+</ul>
+</li>
+<li>
+<p><strong>Integration and Testing Phase (30 mins)</strong></p>
+<ul>
+<li>End-to-end testing across services</li>
+<li>Dashboard verification and visualization</li>
+<li>Cross-service scenario testing</li>
+<li>Performance and error handling verification</li>
+</ul>
+</li>
+<li>
+<p><strong>Workshop Finale (30 mins)</strong></p>
+<ul>
+<li>Demonstration of the fully connected city</li>
+<li>Discussion of API-first benefits observed</li>
+<li>Exploration of the completed ecosystem</li>
+<li>Lessons learned and next steps</li>
+</ul>
+</li>
+</ol>
+<h3>Technical Success Criteria</h3>
+<p>To ensure a successful workshop experience, the implementation should meet these criteria:</p>
+<ol>
+<li>
+<p><strong>Simplicity and Accessibility</strong></p>
+<ul>
+<li>Participants can get started with minimal setup</li>
+<li>Templates provide clear starting points</li>
+<li>Documentation is comprehensible to all skill levels</li>
+</ul>
+</li>
+<li>
+<p><strong>Reliability and Robustness</strong></p>
+<ul>
+<li>Services can run independently</li>
+<li>Failures in one service don't crash the entire ecosystem</li>
+<li>Recovery mechanisms for common issues</li>
+</ul>
+</li>
+<li>
+<p><strong>Visibility and Feedback</strong></p>
+<ul>
+<li>Clear indicators of successful implementation</li>
+<li>Immediate feedback when integrations work</li>
+<li>Visual representation of the entire ecosystem</li>
+</ul>
+</li>
+<li>
+<p><strong>Educational Value</strong></p>
+<ul>
+<li>Clear examples of API-first principles</li>
+<li>Multiple patterns demonstrated across services</li>
+<li>Opportunities to learn from both success and failure</li>
+</ul>
+</li>
+</ol>
+<h2>Participant Prerequisites</h2>
+<p>To ensure a smooth workshop experience, participants should have:</p>
+<ol>
+<li>
+<p><strong>Technical Requirements</strong></p>
+<ul>
+<li>Laptop with Node.js (v20+) installed (but also there should be an included &quot;install via nvm one liner&quot; ), Typescript</li>
+<li>Git client</li>
+<li>Docker Desktop</li>
+<li>VSCode or preferred IDE</li>
+</ul>
+</li>
+<li>
+<p><strong>Knowledge Prerequisites</strong></p>
+<ul>
+<li>Basic JavaScript/TypeScript experience</li>
+<li>Familiarity with REST APIs</li>
+<li>Understanding of HTTP concepts</li>
+</ul>
+</li>
+<li>
+<p><strong>Team Composition</strong></p>
+<ul>
+<li>Mix of engineering and product roles</li>
+<li>Variety of experience levels</li>
+<li>Distribution of domain knowledge</li>
+</ul>
+</li>
+</ol>

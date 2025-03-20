@@ -1,0 +1,115 @@
+<h1>API First Workshop: Building Reusable, Evolving APIs</h1>
+<h2>Overview</h2>
+<p>This hands-on workshop explores the <strong>API-first approach</strong>, enabling Engineering and Product teams to work <strong>in parallel</strong> while building APIs as products. The focus is on <strong>reusable patterns, flexibility, and long-term API evolution</strong> over rigid governance.</p>
+<h3><strong>Key Takeaways</strong></h3>
+<h4><strong>Engineering Teams</strong></h4>
+<ul>
+<li>Learn how to <strong>rapidly implement API-first services</strong> without extensive product requirements.</li>
+<li>Understand how <strong>some services can be built based on known domains</strong> without lengthy planning.</li>
+<li>Experience how <strong>API-first practices enable iteration</strong> without excessive upfront work.</li>
+<li>Use a <strong>walking skeleton</strong> to quickly bootstrap an API and get to work immediately.</li>
+</ul>
+<h4><strong>Product Teams</strong></h4>
+<ul>
+<li>Work <strong>across domains</strong> to design APIs <strong>collaboratively</strong> with other product managers.</li>
+<li>Learn to <strong>define APIs through exploration</strong>, rather than waiting for months of refinement.</li>
+<li>See how <strong>contract-first API design</strong> allows teams to work independently while aligning on a shared vision.</li>
+<li>Understand how <strong>API design impacts service interoperability</strong> across different teams.</li>
+</ul>
+<h4><strong>Both Teams Together</strong></h4>
+<ul>
+<li>Experience how <strong>cross-team alignment</strong> leads to better, faster product delivery.</li>
+<li>Learn to <strong>document APIs effectively</strong> so that engineering and product teams can communicate through contracts.</li>
+<li>Understand that <strong>incremental API evolution</strong> is possible—even when cross-team dependencies exist.</li>
+</ul>
+<hr>
+<h2><strong>Workshop Agenda (240 minutes)</strong></h2>
+<h3><strong>1. API First Foundations (30 min)</strong></h3>
+<ul>
+<li><strong>Kickoff:</strong> Introduction to API-first, why it matters, and how it enables fast iteration.</li>
+<li><strong>City Metaphor:</strong> How different teams (departments) can own services but still collaborate.</li>
+<li><strong>Walking Skeleton:</strong> How it ensures everyone starts with a functioning API.</li>
+</ul>
+<h3><strong>2. Engineering + Product Breakout (90 min)</strong></h3>
+<h4><strong>Engineering: Implementing ‘Known’ Domain Services</strong></h4>
+<ul>
+<li>Teams receive <strong>a pre-defined service</strong> (e.g., police, fire, utilities).</li>
+<li><strong>Define API contracts</strong> quickly based on known domain knowledge.</li>
+<li><strong>Goal:</strong> Show that <strong>APIs don’t need extensive product planning</strong> to start delivering value.</li>
+</ul>
+<h4><strong>Product: Exploring Cross-Domain Services</strong></h4>
+<ul>
+<li>Product managers <strong>collaborate to define services that span multiple domains</strong>.</li>
+<li><strong>Exercise:</strong> Identify APIs that require <strong>shared access</strong>, e.g., permit applications that involve both fire and police.</li>
+<li><strong>Goal:</strong> Show that <strong>API design can be iterative</strong>, refining over time rather than requiring everything upfront.</li>
+</ul>
+<h3><strong>3. First Integration &amp; Feedback Round (20 min)</strong></h3>
+<ul>
+<li>Teams <strong>exchange API contracts</strong> and discuss integration points.</li>
+<li>Engineering and Product teams <strong>adjust contracts where needed</strong>.</li>
+<li><strong>Goal:</strong> Show that <strong>cross-team collaboration doesn’t require waiting on perfect documentation</strong>.</li>
+</ul>
+<h3><strong>4. API Lifecycle: Change Management &amp; Testing (60 min)</strong></h3>
+<ul>
+<li><strong>Versioning:</strong> How to <strong>extend an API without breaking consumers</strong>.</li>
+<li><strong>Testing:</strong> <strong>Contract &amp; integration testing</strong> to ensure APIs meet expectations.</li>
+<li><strong>Monitoring &amp; Metrics:</strong> Setting up <strong>basic API health checks</strong>.</li>
+<li><strong>Goal:</strong> Reinforce the idea that APIs are <strong>evolving products, not static contracts</strong>.</li>
+</ul>
+<h3><strong>5. Final Integration &amp; Cross-Team Review (20 min)</strong></h3>
+<ul>
+<li>Product teams <strong>show how cross-domain services evolved</strong>.</li>
+<li>Engineering teams <strong>demonstrate working APIs</strong>.</li>
+<li><strong>Goal:</strong> Experience how <strong>iterative API development leads to better alignment</strong>.</li>
+</ul>
+<h3><strong>6. Debrief &amp; Lessons Learned (20 min)</strong></h3>
+<ul>
+<li><strong>What worked?</strong> What was easier than expected?</li>
+<li><strong>Where were the biggest struggles?</strong></li>
+<li><strong>Did API-first reduce dependencies or create new ones?</strong></li>
+<li><strong>How did API-first enable long-term flexibility?</strong></li>
+<li><strong>Final thoughts:</strong> What can we take into our own teams?</li>
+</ul>
+<hr>
+<h2><strong>Technical Implementation &amp; Tools</strong></h2>
+<h3><strong>Technology Stack</strong></h3>
+<ul>
+<li><strong>Node.js + TypeScript</strong> for API development</li>
+<li><strong>Express.js</strong> for API routing</li>
+<li><strong>OpenAPI 3.0</strong> for API contract definition</li>
+<li><strong>Docker + k3d</strong> for local Kubernetes-based deployments</li>
+<li><strong>Gravitee API Gateway</strong> for API management</li>
+<li><strong>OAuth 2.0</strong> for authentication</li>
+<li><strong>Google Pub-Sub</strong> for event-driven communication</li>
+<li><strong>Firebase</strong> as a document database</li>
+<li><strong>Swagger UI</strong> for API documentation</li>
+</ul>
+<h3><strong>Walking Skeleton: Bootstrapping APIs Quickly</strong></h3>
+<p>A <strong>walking skeleton</strong> is provided to ensure:</p>
+<ul>
+<li>A working <strong>service registry</strong> for service discovery.</li>
+<li>A <strong>central IAM service</strong> for authentication.</li>
+<li>A <strong>Gravitee API Gateway</strong> for managing API routing.</li>
+<li><strong>Standardized error handling</strong>, logging, and testing frameworks.</li>
+</ul>
+<h3><strong>Testing &amp; API Quality</strong></h3>
+<ul>
+<li><strong>Contract Testing</strong> ensures API implementations match OpenAPI specs.</li>
+<li><strong>Integration Testing</strong> validates inter-service communication.</li>
+<li><strong>Unit Testing</strong> covers business logic and models.</li>
+<li><strong>End-to-End Testing</strong> simulates user interactions across services.</li>
+<li><strong>CI/CD</strong> with GitHub Actions (or similar) ensures repeatable deployments.</li>
+</ul>
+<hr>
+<h2><strong>Closing Thoughts</strong></h2>
+<p>This workshop is designed to <strong>challenge common misconceptions</strong> about API-first development. By working in <strong>parallel</strong> and embracing <strong>iteration</strong>, teams will experience firsthand how APIs can be built <strong>efficiently, flexibly, and with long-term evolution in mind</strong>.</p>
+<p>This isn’t just about writing APIs—it's about <strong>changing how we think about building services</strong>.</p>
+<hr>
+<h2><strong>Next Steps</strong></h2>
+<ul>
+<li>[ ] Finalize workshop materials &amp; pre-configured environments.</li>
+<li>[ ] Test the walking skeleton setup with a pilot group.</li>
+<li>[ ] Document real-world API-first case studies to inspire participants.</li>
+<li>[ ] Define follow-up exercises for teams to continue practicing post-workshop.</li>
+</ul>
+<p>🚀 <strong>API-first isn’t a process—it’s a mindset shift. Let’s get started.</strong></p>

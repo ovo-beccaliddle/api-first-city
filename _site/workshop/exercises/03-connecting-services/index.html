@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        code {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 0.2rem 0.4rem;
+        }
+        nav {
+            background-color: #f6f8fa;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 3px;
+        }
+        nav a {
+            margin-right: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+    </nav>
+    <main>
+        <h1>Exercise 3: Connecting City Services Together</h1>
+<p>Awesome work, city developer! 🏙️</p>
+<p>Your service is up and running, but a city isn't made of isolated services—it's a living ecosystem where everything needs to work together. In this exercise, we'll connect your service to others and implement more advanced integration patterns.</p>
+<h2>What You'll Learn</h2>
+<p>By the end of this exercise, you'll be able to:</p>
+<ol>
+<li>Discover and communicate with other city services</li>
+<li>Implement both synchronous and asynchronous integration patterns</li>
+<li>Publish and subscribe to events using the city event bus</li>
+<li>Handle cross-service authentication and authorization</li>
+<li>Implement resilient communication with timeouts and retries</li>
+</ol>
+<h2>Why Service Integration Matters</h2>
+<p>In our city metaphor:</p>
+<ul>
+<li>The ambulance service needs to know where hospitals are located</li>
+<li>The power plant needs to report usage to financial services</li>
+<li>Traffic cameras need to communicate violations to the fines system</li>
+</ul>
+<p>These cross-service interactions make our city &quot;smart&quot; and reflect real-world dependencies.</p>
+<h2>Let's Start Connecting!</h2>
+<h3>1. Exploring the Service Registry</h3>
+<p>The city provides a central service registry for service discovery:</p>
+<ol>
+<li>Check out the registry's API at <code>http://localhost:8080/api-docs</code></li>
+<li>See what services are currently registered:<pre><code class="language-bash">curl http://localhost:8080/registry
+</code></pre>
+</li>
+</ol>
+<p>You should see your service and others that your teammates have registered. This is how services can find each other!</p>
+<h3>2. Calling Other Services</h3>
+<p>Now, let's call another service from yours. Choose a service that makes sense for your domain:</p>
+<ul>
+<li>Police service could call Dispatch service</li>
+<li>Ambulance could call Hospital service</li>
+<li>Traffic cameras could call Fines service</li>
+</ul>
+<p>Here's how to add client code to call another service:</p>
+<pre><code class="language-typescript">// src/clients/dispatch-client.ts
+import axios from 'axios';
+import { ServiceRegistry } from '../utils/service-registry';
+
+// Define types for the external service
+interface Call {
+  id: string;
+  type: string;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  status: 'PENDING' | 'ASSIGNED' | 'RESOLVED';
+  description: string;
+}
+
+export class DispatchClient {
+  private baseUrl: string | null = null;
+
+  constructor(private registry: ServiceRegistry) {}
+
+  // Lazy initialization of the service URL
+  private async getBaseUrl(): Promise&lt;string&gt; {
+    if (!this.baseUrl) {
+      const service = await this.registry.getService('dispatch-service');
+      if (!service) {
+        throw new Error('Dispatch service not found in registry');
+      }
+      this.baseUrl = service.url;
+    }
+    return this.baseUrl;
+  }
+
+  // Get all active calls
+  async getActiveCalls(): Promise&lt;Call[]&gt; {
+    const url = `${await this.getBaseUrl()}/calls?status=PENDING`;
+    const response = await axios.get(url);
+    return response.data;
+  }
+
+  // Get a specific call
+  async getCall(callId: string): Promise&lt;Call&gt; {
+    const url = `${await this.getBaseUrl()}/calls/${callId}`;
+    const response = await axios.get(url);
+    return response.data;
+  }
+
+  // Assign a patrol to a call
+  async assignPatrolToCall(callId: string, patrolId: string): Promise&lt;Call&gt; {
+    const url = `${await this.getBaseUrl()}/calls/${callId}/assign`;
+    const response = await axios.put(url, { patrolId });
+    return response.data;
+  }
+}
+</code></pre>
+<p>Next, create a service registry utility to discover services:</p>
+<pre><code class="language-typescript">// src/utils/service-registry.ts
+import axios from 'axios';
+
+interface Service {
+  serviceName: string;
+  url: string;
+  endpoints: {
+    path: string;
+    methods: string[];
+  }[];
+}
+
+export class ServiceRegistry {
+  private registryUrl: string;
+  private serviceCache: Map&lt;string, Service&gt; = new Map();
+  private cacheExpiration: Map&lt;string, number&gt; = new Map();
+  private cacheTtlMs = 60000; // 1 minute cache
+
+  constructor(registryUrl = 'http://localhost:8080/registry') {
+    this.registryUrl = registryUrl;
+  }
+
+  async getService(serviceName: string): Promise&lt;Service | null&gt; {
+    // Check cache first
+    if (this.serviceCache.has(serviceName)) {
+      const expiration = this.cacheExpiration.get(serviceName) || 0;
+      if (Date.now() &lt; expiration) {
+        return this.serviceCache.get(serviceName) || null;
+      }
+    }
+
+    // Cache miss or expired, get from registry
+    try {
+      const response = await axios.get(`${this.registryUrl}/${serviceName}`);
+      const service = response.data;
+      
+      // Update cache
+      this.serviceCache.set(serviceName, service);
+      this.cacheExpiration.set(serviceName, Date.now() + this.cacheTtlMs);
+      
+      return service;
+    } catch (error) {
+      console.error(`Failed to get service ${serviceName}:`, error);
+      return null;
+    }
+  }
+
+  async getAllServices(): Promise&lt;Service[]&gt; {
+    try {
+      const response = await axios.get(this.registryUrl);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get all services:', error);
+      return [];
+    }
+  }
+}
+</code></pre>
+<h3>3. Update Your Service to Use the Client</h3>
+<p>Now integrate the client into your service:</p>
+<pre><code class="language-typescript">// Update your services/patrol-service.ts
+import { Patrol, PatrolType } from '../models/patrol';
+import { PatrolRepository } from '../repositories/patrol-repository';
+import { DispatchClient } from '../clients/dispatch-client';
+import { ServiceRegistry } from '../utils/service-registry';
+
+// Create registry and client instances
+const registry = new ServiceRegistry();
+const dispatchClient = new DispatchClient(registry);
+
+export const PatrolService = {
+  // ... existing methods
+  
+  // New method to get available calls from dispatch
+  getAvailableCalls: async (): Promise&lt;any[]&gt; =&gt; {
+    try {
+      return await dispatchClient.getActiveCalls();
+    } catch (error) {
+      console.error('Error getting active calls:', error);
+      return [];
+    }
+  },
+  
+  // Enhanced method to assign to call - now communicates with dispatch
+  assignToCall: async (patrolId: string, callId: string): Promise&lt;Patrol | undefined&gt; =&gt; {
+    const patrol = PatrolRepository.findById(patrolId);
+    
+    if (!patrol || patrol.status !== 'AVAILABLE') {
+      return undefined;
+    }
+    
+    try {
+      // Update the call in dispatch service
+      await dispatchClient.assignPatrolToCall(callId, patrolId);
+      
+      // Update local patrol
+      return PatrolRepository.update(patrolId, {
+        activeCall: callId,
+        status: 'BUSY'
+      });
+    } catch (error) {
+      console.error('Error assigning patrol to call:', error);
+      return undefined;
+    }
+  }
+};
+</code></pre>
+<h3>4. Implement Event-Based Communication (Pub/Sub)</h3>
+<p>For some integrations, synchronous REST calls aren't ideal. Let's implement pub/sub for events:</p>
+<p>First, create an event publisher:</p>
+<pre><code class="language-typescript">// src/utils/event-publisher.ts
+import axios from 'axios';
+
+export interface Event&lt;T&gt; {
+  eventType: string;
+  timestamp: string;
+  source: string;
+  data: T;
+}
+
+export class EventPublisher {
+  private eventBusUrl: string;
+  
+  constructor(eventBusUrl = 'http://localhost:8081/events') {
+    this.eventBusUrl = eventBusUrl;
+  }
+  
+  async publish&lt;T&gt;(eventType: string, data: T): Promise&lt;void&gt; {
+    const event: Event&lt;T&gt; = {
+      eventType,
+      timestamp: new Date().toISOString(),
+      source: 'police-service', // use your service name
+      data
+    };
+    
+    try {
+      await axios.post(this.eventBusUrl, event);
+      console.log(`Published event: ${eventType}`);
+    } catch (error) {
+      console.error(`Failed to publish event ${eventType}:`, error);
+      throw error;
+    }
+  }
+}
+</code></pre>
+<p>Now use it in your service to publish events:</p>
+<pre><code class="language-typescript">// Update services/patrol-service.ts
+import { EventPublisher } from '../utils/event-publisher';
+
+const eventPublisher = new EventPublisher();
+
+export const PatrolService = {
+  // ... existing methods
+  
+  completeCall: async (patrolId: string): Promise&lt;Patrol | undefined&gt; =&gt; {
+    const patrol = PatrolRepository.findById(patrolId);
+    
+    if (!patrol || !patrol.activeCall) {
+      return undefined;
+    }
+    
+    const updatedPatrol = PatrolRepository.update(patrolId, {
+      activeCall: undefined,
+      status: 'AVAILABLE'
+    });
+    
+    if (updatedPatrol) {
+      // Publish an event that others can subscribe to
+      await eventPublisher.publish('patrol.available', {
+        patrolId: updatedPatrol.id,
+        patrolType: updatedPatrol.type,
+        location: updatedPatrol.location
+      });
+    }
+    
+    return updatedPatrol;
+  }
+};
+</code></pre>
+<h3>5. Subscribing to Events</h3>
+<p>To listen for events from other services, create an event subscriber:</p>
+<pre><code class="language-typescript">// src/utils/event-subscriber.ts
+import express from 'express';
+
+interface EventHandler&lt;T&gt; {
+  (data: T): Promise&lt;void&gt;;
+}
+
+export class EventSubscriber {
+  private handlers: Map&lt;string, EventHandler&lt;any&gt;[]&gt; = new Map();
+  
+  constructor(private app: express.Application) {
+    // Set up the webhook endpoint for events
+    this.app.post('/events/webhook', express.json(), this.handleEvent.bind(this));
+  }
+  
+  subscribe&lt;T&gt;(eventType: string, handler: EventHandler&lt;T&gt;): void {
+    if (!this.handlers.has(eventType)) {
+      this.handlers.set(eventType, []);
+    }
+    this.handlers.get(eventType)?.push(handler);
+    console.log(`Subscribed to event: ${eventType}`);
+  }
+  
+  private async handleEvent(req: express.Request, res: express.Response): Promise&lt;void&gt; {
+    const event = req.body;
+    
+    if (!event || !event.eventType) {
+      res.status(400).json({ error: 'Invalid event format' });
+      return;
+    }
+    
+    console.log(`Received event: ${event.eventType}`);
+    
+    const handlers = this.handlers.get(event.eventType) || [];
+    
+    try {
+      await Promise.all(handlers.map(handler =&gt; handler(event.data)));
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error(`Error handling event ${event.eventType}:`, error);
+      res.status(500).json({ error: 'Error handling event' });
+    }
+  }
+}
+</code></pre>
+<p>Register your event subscriptions in your main application:</p>
+<pre><code class="language-typescript">// Update src/index.ts
+import { EventSubscriber } from './utils/event-subscriber';
+import { PatrolService } from './services/patrol-service';
+
+// Create event subscriber
+const eventSubscriber = new EventSubscriber(app);
+
+// Subscribe to relevant events
+eventSubscriber.subscribe('emergency.reported', async (data) =&gt; {
+  console.log('Emergency reported:', data);
+  // Maybe automatically assign closest patrol?
+  const closestPatrol = await PatrolService.findClosestPatrolToLocation(data.location);
+  if (closestPatrol) {
+    await PatrolService.assignToCall(closestPatrol.id, data.emergencyId);
+  }
+});
+
+// Register your event subscriptions with the event bus
+async function registerEventSubscriptions() {
+  try {
+    await axios.post('http://localhost:8081/subscriptions', {
+      serviceName: 'police-service',
+      url: `http://localhost:${port}/events/webhook`,
+      events: ['emergency.reported']
+    });
+    console.log('✅ Registered event subscriptions');
+  } catch (error) {
+    console.error('❌ Failed to register event subscriptions:', error);
+  }
+}
+
+// Call this after app starts
+app.listen(port, () =&gt; {
+  console.log(`🚀 Service running at http://localhost:${port}`);
+  registerService();
+  registerEventSubscriptions();
+});
+</code></pre>
+<h3>6. Implementing Resilient Communication</h3>
+<p>When services depend on each other, we need to handle failures gracefully:</p>
+<pre><code class="language-typescript">// src/utils/resilient-client.ts
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+
+interface RetryConfig {
+  maxRetries: number;
+  retryDelay: number;
+  timeoutMs: number;
+}
+
+export class ResilientClient {
+  private config: RetryConfig;
+  
+  constructor(config?: Partial&lt;RetryConfig&gt;) {
+    this.config = {
+      maxRetries: 3,
+      retryDelay: 300,
+      timeoutMs: 5000,
+      ...config
+    };
+  }
+  
+  async get&lt;T&gt;(url: string, config?: AxiosRequestConfig): Promise&lt;T&gt; {
+    return this.request&lt;T&gt;(() =&gt; axios.get(url, {
+      ...config,
+      timeout: this.config.timeoutMs
+    }));
+  }
+  
+  async post&lt;T&gt;(url: string, data: any, config?: AxiosRequestConfig): Promise&lt;T&gt; {
+    return this.request&lt;T&gt;(() =&gt; axios.post(url, data, {
+      ...config,
+      timeout: this.config.timeoutMs
+    }));
+  }
+  
+  async put&lt;T&gt;(url: string, data: any, config?: AxiosRequestConfig): Promise&lt;T&gt; {
+    return this.request&lt;T&gt;(() =&gt; axios.put(url, data, {
+      ...config,
+      timeout: this.config.timeoutMs
+    }));
+  }
+  
+  private async request&lt;T&gt;(fn: () =&gt; Promise&lt;AxiosResponse&lt;T&gt;&gt;): Promise&lt;T&gt; {
+    let lastError: Error | null = null;
+    
+    for (let retry = 0; retry &lt;= this.config.maxRetries; retry++) {
+      try {
+        const response = await fn();
+        return response.data;
+      } catch (error: any) {
+        lastError = error;
+        
+        // Don't retry on 4xx client errors (except 408 Request Timeout)
+        if (error.response &amp;&amp; error.response.status &gt;= 400 &amp;&amp; error.response.status &lt; 500 &amp;&amp; error.response.status !== 408) {
+          break;
+        }
+        
+        if (retry &lt; this.config.maxRetries) {
+          // Wait before retrying
+          await new Promise(resolve =&gt; setTimeout(resolve, this.config.retryDelay * (retry + 1)));
+          console.log(`Retrying request (${retry + 1}/${this.config.maxRetries})...`);
+        }
+      }
+    }
+    
+    throw lastError;
+  }
+}
+</code></pre>
+<p>Use the resilient client in your service clients:</p>
+<pre><code class="language-typescript">// Update clients/dispatch-client.ts
+import { ResilientClient } from '../utils/resilient-client';
+
+export class DispatchClient {
+  private baseUrl: string | null = null;
+  private client: ResilientClient;
+
+  constructor(private registry: ServiceRegistry) {
+    this.client = new ResilientClient();
+  }
+  
+  // ...existing methods using this.client.get instead of axios.get
+}
+</code></pre>
+<h3>7. Testing the Integration</h3>
+<p>Let's make sure everything works:</p>
+<ol>
+<li>
+<p>Start your service and any services you're integrating with:</p>
+<pre><code class="language-bash"># In your service directory
+npm run dev
+
+# In other service directories
+cd ../other-service
+npm run dev
+</code></pre>
+</li>
+<li>
+<p>Test the integrations:</p>
+<pre><code class="language-bash"># If your service is Police, test getting calls from Dispatch
+curl http://localhost:3000/calls/available
+
+# Test assigning a patrol to a call
+curl -X PUT http://localhost:3000/patrols/patrol-id/assign \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;callId&quot;: &quot;call-id&quot;}'
+</code></pre>
+</li>
+<li>
+<p>Test the event system:</p>
+<pre><code class="language-bash"># Trigger an event
+curl -X POST http://localhost:8081/events \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{
+    &quot;eventType&quot;: &quot;emergency.reported&quot;,
+    &quot;timestamp&quot;: &quot;2023-06-30T12:34:56Z&quot;,
+    &quot;source&quot;: &quot;dispatch-service&quot;,
+    &quot;data&quot;: {
+      &quot;emergencyId&quot;: &quot;e12345&quot;,
+      &quot;type&quot;: &quot;FIRE&quot;,
+      &quot;location&quot;: {
+        &quot;latitude&quot;: 40.7128,
+        &quot;longitude&quot;: -74.0060
+      }
+    }
+  }'
+</code></pre>
+</li>
+</ol>
+<h2>Bonus Challenges</h2>
+<p>If you're speeding ahead:</p>
+<ol>
+<li>Implement circuit breaking for service calls to prevent cascading failures</li>
+<li>Add caching for frequently-requested data from other services</li>
+<li>Create a dashboard that shows the state of your service and its integrations</li>
+<li>Implement more complex cross-service scenarios from the service description</li>
+<li>Add metrics to track service call performance and reliability</li>
+</ol>
+<h2>Helpful Resources</h2>
+<ul>
+<li><a href="https://axios-http.com/docs/intro">Axios Documentation</a></li>
+<li><a href="https://cloud.google.com/pubsub/docs/overview">Pub/Sub Pattern</a></li>
+<li><a href="https://martinfowler.com/bliki/CircuitBreaker.html">Circuit Breaker Pattern</a></li>
+</ul>
+<h2>What's Next?</h2>
+<p>In the next exercise, we'll explore advanced topics like versioning APIs, handling security, and monitoring your services in production.</p>
+<p>Ready to continue? Head to <a href="./04-advanced-api-features">Exercise 4: Advanced API Features</a></p>
+
+    </main>
+</body>
+</html>

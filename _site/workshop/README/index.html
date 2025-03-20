@@ -1,0 +1,324 @@
+<h1>API First Workshop: City Services</h1>
+<p>This workshop provides a hands-on experience with API-first development using a &quot;City Services&quot; microservices architecture as a practical example.</p>
+<h2>Workshop Overview</h2>
+<p>The workshop follows a build-up approach, where participants progressively implement and connect services that make up a city's digital infrastructure. You'll learn how to design APIs first, generate code from your specifications, implement business logic, and connect services together—all following API-first best practices.</p>
+<h2>Project Structure</h2>
+<p>The workshop is organized into the following main directories:</p>
+<pre><code>workshop/
+├── common/                    # Shared code across all services
+│   ├── models/                # Shared data models
+│   ├── errors/                # Error handling utilities
+│   ├── logging/               # Logging infrastructure
+│   ├── firebase/              # Firebase infrastructure
+│   └── testing/               # Test utilities
+├── infrastructure/            # Core infrastructure services
+│   ├── api-gateway/           # API Gateway (Gravitee)
+│   ├── iam/                   # Identity and Access Management
+│   ├── service-registry/      # Service discovery
+│   └── event-bus/             # Event bus setup
+├── services/                  # City services
+│   └── sample/                # Complete sample service (reference implementation)
+├── deployment/                # Deployment configuration
+│   ├── docker-compose.yml     # Local development setup
+│   ├── kubernetes/            # K8s deployment manifests
+│   └── scripts/               # Setup and utility scripts
+└── exercises/                 # Workshop exercises
+    └── ...
+</code></pre>
+<h2>Sample Service Deep Dive</h2>
+<p>The <code>services/sample</code> directory contains a complete reference implementation that showcases API-first principles. This serves as your guide to understanding the architecture and patterns used throughout the workshop.</p>
+<h3>Sample Service Structure</h3>
+<pre><code>services/sample/
+├── api/                      # API specification
+│   └── openapi.yaml         # OpenAPI 3.1 contract
+├── src/                      # Source code
+│   ├── generated/           # Auto-generated code from OpenAPI
+│   │   ├── types.gen.ts     # TypeScript types based on API schemas
+│   │   ├── zod.gen.ts       # Zod validation schemas
+│   │   ├── client.gen.ts    # Fetch-based API client
+│   │   ├── sdk.gen.ts       # Higher-level SDK for API access
+│   │   └── ...              # Other generated files
+│   ├── models/              # Domain models
+│   ├── repositories/        # Data access layer
+│   ├── services/            # Business logic layer
+│   ├── controllers/         # HTTP request handlers
+│   ├── middleware/          # Express middleware
+│   ├── events/              # Event handling
+│   ├── app.ts               # Express app setup
+│   └── index.ts             # Main entry point
+├── openapi-ts.config.ts     # OpenAPI code generation config
+├── tsconfig.json            # TypeScript configuration
+└── package.json             # Dependencies and scripts
+</code></pre>
+<h3>Key Components</h3>
+<h4>API Contract (<code>api/openapi.yaml</code>)</h4>
+<p>The heart of the API-first approach. This OpenAPI specification defines:</p>
+<ul>
+<li>All endpoints with their paths and HTTP methods</li>
+<li>Request/response schemas</li>
+<li>Validation rules</li>
+<li>Error responses</li>
+<li>Authentication requirements</li>
+</ul>
+<p>This contract serves as the single source of truth for the API and drives code generation.</p>
+<h4>Generated Code (<code>src/generated/</code>)</h4>
+<p>Automatically generated from the OpenAPI specification using <code>@hey-api/openapi-ts</code>:</p>
+<ul>
+<li><strong>types.gen.ts</strong>: TypeScript interfaces and types for all API models</li>
+<li><strong>zod.gen.ts</strong>: Runtime validation schemas using Zod</li>
+<li><strong>client.gen.ts</strong>: Type-safe HTTP client for API consumers</li>
+<li><strong>sdk.gen.ts</strong>: Higher-level SDK for more convenient API access</li>
+</ul>
+<p>This generated code ensures consistency between your API contract and implementation.</p>
+<h4>Models (<code>src/models/</code>)</h4>
+<p>Domain models represent the core entities in the service. These typically extend or implement the interfaces from the generated types, adding any business logic methods and properties:</p>
+<pre><code class="language-typescript">// Example: src/models/resource.ts
+import { Resource } from '../generated';
+
+// Extend the generated type with additional methods or properties
+export interface ResourceModel extends Resource {
+  calculateSomething(): number;
+}
+</code></pre>
+<h4>Repositories (<code>src/repositories/</code>)</h4>
+<p>The data access layer responsible for CRUD operations on domain models:</p>
+<pre><code class="language-typescript">// Example: src/repositories/resource-repository.ts
+export const ResourceRepository = {
+  findAll(): Promise&lt;Resource[]&gt; { /* ... */ },
+  findById(id: string): Promise&lt;Resource | null&gt; { /* ... */ },
+  create(data: CreateResourceRequest): Promise&lt;Resource&gt; { /* ... */ },
+  update(id: string, data: UpdateResourceRequest): Promise&lt;Resource | null&gt; { /* ... */ },
+  delete(id: string): Promise&lt;boolean&gt; { /* ... */ }
+};
+</code></pre>
+<p>Repositories abstract away the underlying data storage mechanism (Firebase in this sample).</p>
+<h4>Services (<code>src/services/</code>)</h4>
+<p>The business logic layer that coordinates operations across repositories and implements domain rules:</p>
+<pre><code class="language-typescript">// Example: src/services/resource-service.ts
+export const ResourceService = {
+  async getResources(filter?: FilterParams): Promise&lt;Resource[]&gt; {
+    // Business logic for fetching resources with filtering
+    const resources = await ResourceRepository.findAll();
+    return filter ? resources.filter(/*...*/) : resources;
+  },
+  
+  async createResource(data: unknown): Promise&lt;Resource&gt; {
+    // Validate with Zod schema from generated code
+    const validated = ResourceSchema.parse(data);
+    // Additional business logic/validation
+    return ResourceRepository.create(validated);
+  }
+};
+</code></pre>
+<p>Services ensure that business rules are enforced and use the generated Zod schemas for validation.</p>
+<h4>Controllers (<code>src/controllers/</code>)</h4>
+<p>Handle HTTP requests and responses, delegating business logic to services:</p>
+<pre><code class="language-typescript">// Example: src/controllers/resource-controller.ts
+router.get('/', async (req: Request, res: Response, next: NextFunction) =&gt; {
+  try {
+    const filter = req.query;
+    const resources = await ResourceService.getResources(filter);
+    res.json(resources);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/', async (req: Request, res: Response, next: NextFunction) =&gt; {
+  try {
+    const newResource = await ResourceService.createResource(req.body);
+    res.status(201).json(newResource);
+  } catch (error) {
+    next(error);
+  }
+});
+</code></pre>
+<p>Controllers focus on HTTP-specific concerns and delegate business logic to services.</p>
+<h4>OpenAPI Validation (<code>src/app.ts</code>)</h4>
+<p>The Express OpenAPI Validator middleware ensures all requests and responses conform to the API contract:</p>
+<pre><code class="language-typescript">// In app.ts
+app.use(
+  OpenAPIValidator.middleware({
+    apiSpec: join(__dirname, '../api/openapi.yaml'),
+    validateRequests: true,
+    validateResponses: true
+  })
+);
+</code></pre>
+<p>This provides runtime validation that your implementation correctly follows the API specification.</p>
+<h4>Service Registry Integration</h4>
+<p>The sample service registers with the service registry to enable discovery by other services:</p>
+<pre><code class="language-typescript">// In index.ts
+import { registryClient } from './clients/registry-client';
+
+// When starting the service
+app.listen(port, async () =&gt; {
+  console.log(`Service running at http://localhost:${port}`);
+  
+  // Register with the service registry
+  await registryClient.register();
+});
+</code></pre>
+<p>This enables other services to discover and communicate with this service dynamically.</p>
+<h2>API-First Workflow</h2>
+<p>The sample service demonstrates the complete API-first workflow:</p>
+<ol>
+<li><strong>Design the API</strong> in <code>api/openapi.yaml</code> first</li>
+<li><strong>Generate code</strong> using <code>npm run generate:api</code> (defined in package.json)</li>
+<li><strong>Implement the service</strong> using the generated types and validation</li>
+<li><strong>Validate at runtime</strong> using the OpenAPI validator middleware</li>
+<li><strong>Document automatically</strong> with Swagger UI at <code>/api-docs</code></li>
+</ol>
+<p>This workflow ensures consistency between your API contract and implementation.</p>
+<h2>Getting Started</h2>
+<p>Follow these steps to set up the workshop environment:</p>
+<ol>
+<li>
+<p>Ensure you have the following prerequisites installed:</p>
+<ul>
+<li>Node.js (v20+)</li>
+<li>Docker and Docker Compose</li>
+<li>kubectl (if using Kubernetes examples)</li>
+<li>k3d (for local Kubernetes, if applicable)</li>
+</ul>
+</li>
+<li>
+<p>Clone this repository and navigate to the workshop directory:</p>
+<pre><code class="language-bash">git clone &lt;repository-url&gt;
+cd api-first-city/workshop
+</code></pre>
+</li>
+<li>
+<p>Install dependencies:</p>
+<pre><code class="language-bash">npm install
+</code></pre>
+</li>
+<li>
+<p>Run the setup script:</p>
+<pre><code class="language-bash">npm run setup
+</code></pre>
+</li>
+</ol>
+<h2>Workshop Exercises</h2>
+<p>The workshop consists of several exercises, each building upon the previous one:</p>
+<ol>
+<li><strong>API-First Basics</strong>: Learn the principles of API-first development and define your first API contract</li>
+<li><strong>Implementing Services</strong>: Build a service implementation based on an API contract</li>
+<li><strong>Service Integration</strong>: Connect multiple services through the API gateway</li>
+<li><strong>Event-Driven Communication</strong>: Implement event-based communication between services</li>
+<li><strong>Testing API-First Services</strong>: Apply different testing strategies to ensure quality</li>
+<li><strong>Deployment</strong>: Deploy the complete city services ecosystem</li>
+</ol>
+<p>Each exercise includes:</p>
+<ul>
+<li>Instructions and requirements</li>
+<li>Starter code (where applicable)</li>
+<li>Reference solutions</li>
+</ul>
+<h2>Technologies</h2>
+<p>This workshop uses the following technologies:</p>
+<ul>
+<li><strong>TypeScript</strong>: For type-safe coding</li>
+<li><strong>Express.js</strong>: Web framework for API implementation</li>
+<li><strong>OpenAPI 3.1</strong>: For API contract definition</li>
+<li><strong>@hey-api/openapi-ts</strong>: Code generation from OpenAPI specifications</li>
+<li><strong>Zod</strong>: Runtime validation library</li>
+<li><strong>Jest</strong>: Testing framework</li>
+<li><strong>Docker &amp; k3d</strong>: For containerization and local Kubernetes</li>
+<li><strong>Gravitee</strong>: API Gateway for routing and management</li>
+<li><strong>OAuth 2.0</strong>: Authentication and authorization</li>
+<li><strong>Google Pub-Sub</strong>: For event-based communication between services</li>
+<li><strong>Firebase</strong>: Document database for services</li>
+<li><strong>Swagger UI</strong>: For API documentation and exploration</li>
+</ul>
+<h2>API Documentation</h2>
+<p>The sample service includes API documentation using Swagger UI, which provides an interactive interface for exploring and testing the API.</p>
+<p>To access the API documentation:</p>
+<ol>
+<li>
+<p>Start the sample service:</p>
+<pre><code class="language-bash">cd workshop/services/sample
+npm run dev
+</code></pre>
+</li>
+<li>
+<p>Open your browser and navigate to:</p>
+<pre><code>http://localhost:3010/api-docs
+</code></pre>
+</li>
+</ol>
+<p>This documentation is automatically generated from the OpenAPI specification located at <code>services/sample/api/openapi.yaml</code>. You can use the Swagger UI interface to:</p>
+<ul>
+<li>Explore available endpoints and models</li>
+<li>Read detailed API descriptions</li>
+<li>Try out API requests directly from the browser</li>
+<li>View request/response examples</li>
+</ul>
+<h2>Modular Docker Compose Architecture</h2>
+<p>This project uses a modular Docker Compose architecture where:</p>
+<ol>
+<li>Each service or infrastructure component has its own <code>docker-compose.yml</code> file in its directory</li>
+<li>The main deployment combines these using Docker Compose's <code>extends</code> feature</li>
+<li>This keeps service configuration close to the service code</li>
+</ol>
+<h3>Running Services</h3>
+<p>You can run all services together using:</p>
+<pre><code class="language-bash"># From project root
+cd workshop/deployment
+docker-compose up
+
+# Or use the convenience script
+./scripts/docker-up.sh
+</code></pre>
+<p>Or run individual infrastructure components directly:</p>
+<pre><code class="language-bash"># Run just the event bus
+cd workshop/infrastructure/event-bus
+docker-compose up
+</code></pre>
+<h2>Environment Configuration</h2>
+<p>The project uses environment variables for configuring services. Each service has its own <code>.env</code> file with specific configurations.</p>
+<h3>Setting Up Environment Variables</h3>
+<p>We provide a utility script to set up the initial environment configuration:</p>
+<pre><code class="language-bash"># From the project root
+yarn setup-env
+</code></pre>
+<h3>Port Allocation</h3>
+<p>By default, services use the following ports:</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Internal Port</th>
+<th>External Port</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IAM</td>
+<td>3000</td>
+<td>3001</td>
+</tr>
+<tr>
+<td>Service Registry</td>
+<td>3000</td>
+<td>3002</td>
+</tr>
+<tr>
+<td>Event Bus (PubSub)</td>
+<td>8085</td>
+<td>8085</td>
+</tr>
+<tr>
+<td>Sample Service</td>
+<td>3000</td>
+<td>3010</td>
+</tr>
+<tr>
+<td>API Gateway</td>
+<td>(multiple)</td>
+<td>(multiple)</td>
+</tr>
+</tbody>
+</table>
+<h2>License</h2>
+<p>This project is licensed under the MIT License - see the LICENSE file for details.</p>

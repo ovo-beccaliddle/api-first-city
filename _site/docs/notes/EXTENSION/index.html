@@ -1,0 +1,278 @@
+<p>&quot;Central Hall&quot; Dashboard</p>
+<p>A web-based visualization showing the city map with different districts representing services
+Initially, most of the city is &quot;dark&quot; or grayed out
+As services come online, their respective areas light up with activity</p>
+<p>&quot;Service Auto-Discovery&quot;</p>
+<p>Each service would register itself with the service registry upon startup
+The registry would broadcast updates using WebSockets to the dashboard
+Services could report their health, API documentation URL, and basic metrics</p>
+<p>&quot;Interactive Elements&quot;</p>
+<p>Clicking on a &quot;lit&quot; district could show:</p>
+<p>Live API documentation (Swagger/OpenAPI UI)
+Current status and health
+Active connections to other services (showing the interdependencies)</p>
+<p>Real-time traffic visualization between services when API calls are made</p>
+<p>&quot;Implementation Approach&quot;</p>
+<p>Use a simple WebSocket server in the service registry
+Create a React-based dashboard that subscribes to service events
+Add a small reporting module to each service template that participants implement</p>
+<p>&quot;Dramatic Reveal&quot;</p>
+<p>Start with the dashboard on the main screen
+Have teams start their services one by one
+Watch as each district of the city progressively lights up
+Demonstrate a cross-service scenario that shows activity flowing across the city</p>
+<p>--</p>
+<h1>API First Workshop: City Dashboard Implementation</h1>
+<h2>Overview</h2>
+<p>The City Dashboard represents the culminating experience of the API First workshop. This central visualization demonstrates how individual services collectively form a functioning city ecosystem, providing a powerful metaphor for API-first development in organizations. As participants complete their service implementations, the dashboard automatically discovers these services and &quot;lights up&quot; different areas of the city, creating a compelling visual finale without requiring any manual configuration from participants.</p>
+<h2>Purpose and Educational Value</h2>
+<p>The City Dashboard serves multiple educational purposes within the workshop:</p>
+<ol>
+<li>It provides immediate visual feedback when services are correctly implemented</li>
+<li>It demonstrates the power of service discovery and API-first integration</li>
+<li>It reinforces the concept that well-designed APIs should &quot;just work&quot; together</li>
+<li>It creates a memorable finale that reinforces the workshop's key messages</li>
+<li>It helps participants visualize how their individual contributions form part of a larger system</li>
+</ol>
+<h2>User Experience</h2>
+<p>From the participant perspective, the experience unfolds as follows:</p>
+<ol>
+<li>Throughout the workshop, participants build and implement their assigned city service APIs</li>
+<li>When they complete their implementation and run their service, they don't need to perform any additional steps for integration</li>
+<li>Within seconds, their service appears on the central dashboard, lighting up their section of the city</li>
+<li>As more teams complete their services, more of the city illuminates</li>
+<li>The final state shows a fully functioning city with visualized connections between services</li>
+<li>Participants can click on any service to view its API documentation, current status, and connections to other services</li>
+</ol>
+<p>This &quot;magical&quot; experience reinforces the value of standardized API contracts and automated discovery.</p>
+<h2>Technical Architecture</h2>
+<h3>Dashboard Components</h3>
+<p>The City Dashboard consists of several key technical components:</p>
+<ol>
+<li>
+<p><strong>Frontend Visualization</strong></p>
+<ul>
+<li>Interactive city map showing all possible services</li>
+<li>Real-time status indicators for each service</li>
+<li>Visualization of cross-service interactions</li>
+<li>Connection details and metrics</li>
+<li>Embedded API documentation (Swagger/OpenAPI UI)</li>
+</ul>
+</li>
+<li>
+<p><strong>Service Registry Backend</strong></p>
+<ul>
+<li>Service discovery mechanism</li>
+<li>Health check and status monitoring</li>
+<li>API gateway integration</li>
+<li>WebSocket server for real-time updates</li>
+<li>API for submitting service information</li>
+</ul>
+</li>
+<li>
+<p><strong>Client-Side Libraries</strong></p>
+<ul>
+<li>Service registration module</li>
+<li>Health reporting agent</li>
+<li>Event dispatcher for service interactions</li>
+</ul>
+</li>
+</ol>
+<h3>Network Infrastructure</h3>
+<p>For the seamless auto-discovery to function, the workshop requires a dedicated network environment with the following specifications:</p>
+<ol>
+<li>
+<p><strong>Dedicated WiFi Network</strong></p>
+<ul>
+<li>SSID: &quot;CityAPI-Workshop&quot; with simple password access</li>
+<li>Isolated network segment (192.168.100.0/24) with DHCP enabled</li>
+<li>Local DNS server configured to resolve <code>.city.local</code> domain</li>
+<li>Multicast DNS (mDNS) traffic allowed with no client isolation</li>
+<li>Static IP (192.168.100.3) for the central dashboard server</li>
+</ul>
+</li>
+<li>
+<p><strong>Zero-Configuration Discovery</strong></p>
+<ul>
+<li>mDNS (Bonjour/Avahi) for service advertisement</li>
+<li>Automatic registration when services start</li>
+<li>Dashboard polls for service health</li>
+<li>WebSocket connections for live updates</li>
+</ul>
+</li>
+<li>
+<p><strong>DNS Configuration</strong></p>
+<ul>
+<li>Dashboard accessible at <code>city-hall.city.local</code></li>
+<li>Services register as <code>[service-name].service.city.local</code></li>
+<li>Wildcard resolution for dynamic service hosts</li>
+</ul>
+</li>
+</ol>
+<h2>Implementation Details</h2>
+<h3>City Visualization</h3>
+<p>The dashboard represents the city as an interactive map with different zones for each service type:</p>
+<ol>
+<li>
+<p><strong>Emergency Services Zone</strong> (Police, Fire, Ambulance)</p>
+<ul>
+<li>Red-themed district with emergency service buildings</li>
+<li>Flashing animations for active incidents</li>
+<li>Dispatch visualization</li>
+</ul>
+</li>
+<li>
+<p><strong>Utilities Zone</strong> (Water, Electric, Waste)</p>
+<ul>
+<li>Infrastructure-themed area with utility buildings</li>
+<li>Flow animations showing resource movement</li>
+<li>Usage metrics and outage indicators</li>
+</ul>
+</li>
+<li>
+<p><strong>Transportation Zone</strong> (Traffic, Public Transit)</p>
+<ul>
+<li>Road networks and transit hubs</li>
+<li>Moving animations for vehicles</li>
+<li>Traffic conditions visualization</li>
+</ul>
+</li>
+<li>
+<p><strong>Citizen Services Zone</strong> (Requests, Permits)</p>
+<ul>
+<li>City hall and government buildings</li>
+<li>Citizen avatar animations</li>
+<li>Service request visualization</li>
+</ul>
+</li>
+</ol>
+<h3>State Visualization</h3>
+<p>The dashboard uses visual cues to represent service states:</p>
+<ol>
+<li><strong>Unimplemented Services</strong>: Grayed out, dark buildings</li>
+<li><strong>Running Services</strong>: Illuminated buildings with active animations</li>
+<li><strong>Healthy Connections</strong>: Bright pathways between services</li>
+<li><strong>API Calls</strong>: Animated data packets moving between services</li>
+<li><strong>Errors/Issues</strong>: Warning indicators and error messages</li>
+</ol>
+<h3>Technical Implementation</h3>
+<p>The dashboard is implemented using:</p>
+<ol>
+<li>
+<p><strong>Frontend Stack</strong></p>
+<ul>
+<li>React for UI components</li>
+<li>D3.js for data visualization</li>
+<li>WebSockets for real-time updates</li>
+<li>HTML5 Canvas for animations</li>
+</ul>
+</li>
+<li>
+<p><strong>Backend Services</strong></p>
+<ul>
+<li>Node.js server for service registry</li>
+<li>WebSocket server for push notifications</li>
+<li>Express.js for REST API endpoints</li>
+<li>In-memory database for service state</li>
+</ul>
+</li>
+<li>
+<p><strong>Client Integration</strong></p>
+<ul>
+<li>Service registration module included in starter templates</li>
+<li>Automatic mDNS advertisement</li>
+<li>Event hooks for cross-service communication</li>
+</ul>
+</li>
+</ol>
+<h2>Service Registration Flow</h2>
+<p>The automatic service discovery follows this sequence:</p>
+<ol>
+<li>
+<p><strong>Service Startup</strong></p>
+<ul>
+<li>Service starts on participant's laptop</li>
+<li>Service registers itself via mDNS with type <code>_cityapi._tcp.local</code></li>
+<li>mDNS advertisement includes service type, name, and port</li>
+</ul>
+</li>
+<li>
+<p><strong>Dashboard Discovery</strong></p>
+<ul>
+<li>Dashboard listens for mDNS advertisements</li>
+<li>New services are detected automatically</li>
+<li>Dashboard connects to the service's health check endpoint</li>
+<li>Service metadata is retrieved including OpenAPI documentation URL</li>
+</ul>
+</li>
+<li>
+<p><strong>Visual Integration</strong></p>
+<ul>
+<li>Dashboard maps the service to its city location</li>
+<li>Area is &quot;illuminated&quot; with appropriate animations</li>
+<li>Service information is added to the registry</li>
+<li>Potential connections to other services are established</li>
+</ul>
+</li>
+<li>
+<p><strong>Ongoing Monitoring</strong></p>
+<ul>
+<li>Periodic health checks maintain status</li>
+<li>Traffic between services is visualized when it occurs</li>
+<li>Status changes trigger visual updates</li>
+</ul>
+</li>
+</ol>
+<h2>Setup and Deployment</h2>
+<h3>Dashboard Deployment</h3>
+<p>To deploy the City Dashboard:</p>
+<ol>
+<li>Set up the central server at the static IP (192.168.100.3)</li>
+<li>Deploy the dashboard application</li>
+<li>Configure the service registry</li>
+<li>Test with sample services prior to workshop</li>
+</ol>
+<h3>Participant Connection</h3>
+<p>Participants simply:</p>
+<ol>
+<li>Connect to the &quot;CityAPI-Workshop&quot; WiFi network</li>
+<li>Use the provided service template which includes registration code</li>
+<li>Implement their assigned service</li>
+<li>Run the service locally - no additional configuration needed</li>
+<li>View the dashboard at <code>city-hall.city.local</code> to see their service appear</li>
+</ol>
+<h3>Contingency Plans</h3>
+<p>In case of network issues:</p>
+<ol>
+<li>Backup router with identical configuration</li>
+<li>Manual service registration option</li>
+<li>Local-only mode with simulated services</li>
+</ol>
+<h2>Workshop Integration</h2>
+<h3>Introduction Phase</h3>
+<p>During the workshop introduction:</p>
+<ol>
+<li>Demonstrate the empty city dashboard</li>
+<li>Show a pre-configured service being added</li>
+<li>Explain how services will automatically appear</li>
+<li>Set the goal of fully illuminating the city</li>
+</ol>
+<h3>Practise Skills Phase</h3>
+<p>During implementation:</p>
+<ol>
+<li>Keep dashboard visible on a central screen</li>
+<li>Celebrate as teams get their services running</li>
+<li>Use the visual feedback to encourage progress</li>
+<li>Highlight interesting service interactions</li>
+</ol>
+<h3>Final Reveal</h3>
+<p>At the workshop conclusion:</p>
+<ol>
+<li>Showcase the fully illuminated city</li>
+<li>Demonstrate a complex cross-service scenario</li>
+<li>Show the complete API ecosystem in action</li>
+<li>Capture a &quot;city screenshot&quot; as a workshop memento</li>
+</ol>
+<h2>Summary</h2>
+<p>The City Dashboard creates a powerful, tangible metaphor for API-first development by visually demonstrating how individual services combine to create a functioning ecosystem. By leveraging a dedicated network environment with zero-configuration service discovery, participants experience the magic of seeing their work automatically integrate into the larger system without additional effort - exactly what well-designed APIs should enable.</p>
+<p>This visual finale reinforces the workshop's core message: When APIs are designed first with clear contracts and standards, integration becomes seamless and the resulting system is greater than the sum of its parts.</p>

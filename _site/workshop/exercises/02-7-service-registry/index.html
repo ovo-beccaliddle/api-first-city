@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        code {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 0.2rem 0.4rem;
+        }
+        nav {
+            background-color: #f6f8fa;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 3px;
+        }
+        nav a {
+            margin-right: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+    </nav>
+    <main>
+        <h1>Registering Your Service with the City Registry</h1>
+<p>Now that you've built a fully functional city service with models, repositories, services, and controllers, it's time to make it discoverable by other city services. The City Service Registry is a central hub that allows services to discover and communicate with each other.</p>
+<h2>What is the Service Registry?</h2>
+<p>The Service Registry is a centralized directory of all city services, containing information about:</p>
+<ul>
+<li>What services are available</li>
+<li>Where they're located (URLs/endpoints)</li>
+<li>What capabilities they provide</li>
+<li>Their current status and health</li>
+</ul>
+<p>Think of it as a phone book for city services - when one service needs to talk to another, it first checks the registry to find out where that service is and how to talk to it.</p>
+<h2>Why Use a Service Registry?</h2>
+<p>Using a registry provides several benefits:</p>
+<ul>
+<li><strong>Dynamic discovery</strong>: Services can find each other without hardcoded URLs</li>
+<li><strong>Load balancing</strong>: Multiple instances of the same service can register</li>
+<li><strong>Health monitoring</strong>: The registry can track which services are operational</li>
+<li><strong>Metadata sharing</strong>: Services can publish capabilities and version info</li>
+<li><strong>Circuit breaking</strong>: Failing services can be automatically removed</li>
+</ul>
+<h2>Connecting to the City Service Registry</h2>
+<p>Let's implement the code needed to register your service with the city registry.</p>
+<h3>1. Create a Registry Client</h3>
+<p>First, create a new file for the registry client in your service:</p>
+<pre><code class="language-bash">mkdir -p services/your-service-name/src/clients
+touch services/your-service-name/src/clients/registry-client.ts
+</code></pre>
+<p>Now, implement the registry client:</p>
+<pre><code class="language-typescript">// src/clients/registry-client.ts
+import axios from 'axios';
+import { EventEmitter } from 'events';
+
+// Registry service configuration
+const REGISTRY_URL = process.env.REGISTRY_URL || 'http://localhost:4000';
+const REGISTRY_PING_INTERVAL = 30000; // 30 seconds
+
+// Service info
+const SERVICE_INFO = {
+  name: process.env.SERVICE_NAME || 'your-service-name', // Replace with your actual service name
+  url: `http://localhost:${process.env.PORT || 3000}`,
+  version: '1.0.0',
+  description: 'Your service description here', // Update with your service description
+  endpoints: [
+    // List your main endpoints here
+    {
+      path: '/your-resources',
+      methods: ['GET', 'POST'],
+      description: 'Manage resources'
+    },
+    // Add more endpoints as needed
+  ],
+  status: 'ONLINE'
+};
+
+class RegistryClient extends EventEmitter {
+  private pingInterval: NodeJS.Timeout | null = null;
+  private isRegistered = false;
+
+  constructor() {
+    super();
+  }
+
+  async register(): Promise&lt;boolean&gt; {
+    try {
+      const response = await axios.post(`${REGISTRY_URL}/register`, SERVICE_INFO);
+      
+      if (response.status === 200 || response.status === 201) {
+        console.log(`✅ Service registered with the city registry: ${SERVICE_INFO.name}`);
+        this.isRegistered = true;
+        this.startPinging();
+        return true;
+      } else {
+        console.error(`Failed to register with the city registry: ${response.statusText}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error registering with the city registry:', error);
+      return false;
+    }
+  }
+
+  async unregister(): Promise&lt;boolean&gt; {
+    if (!this.isRegistered) return true;
+
+    try {
+      const response = await axios.post(`${REGISTRY_URL}/unregister`, {
+        name: SERVICE_INFO.name,
+        url: SERVICE_INFO.url
+      });
+      
+      if (response.status === 200) {
+        console.log(`✅ Service unregistered from the city registry: ${SERVICE_INFO.name}`);
+        this.isRegistered = false;
+        this.stopPinging();
+        return true;
+      } else {
+        console.error(`Failed to unregister from the city registry: ${response.statusText}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error unregistering from the city registry:', error);
+      return false;
+    }
+  }
+
+  async getServices(): Promise&lt;any[]&gt; {
+    try {
+      const response = await axios.get(`${REGISTRY_URL}/services`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching services from the registry:', error);
+      return [];
+    }
+  }
+
+  async getServiceByName(name: string): Promise&lt;any | null&gt; {
+    try {
+      const response = await axios.get(`${REGISTRY_URL}/services/${name}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching service &quot;${name}&quot; from the registry:`, error);
+      return null;
+    }
+  }
+
+  private startPinging(): void {
+    if (this.pingInterval) return;
+
+    this.pingInterval = setInterval(async () =&gt; {
+      try {
+        await axios.post(`${REGISTRY_URL}/ping`, {
+          name: SERVICE_INFO.name,
+          status: 'ONLINE'
+        });
+      } catch (error) {
+        console.error('Error pinging the city registry:', error);
+        this.emit('registry-connection-lost');
+      }
+    }, REGISTRY_PING_INTERVAL);
+  }
+
+  private stopPinging(): void {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+  }
+}
+
+// Create and export a singleton instance
+export const registryClient = new RegistryClient();
+
+// Ensure the service unregisters when the application is shutting down
+process.on('SIGINT', async () =&gt; {
+  console.log('Service shutting down, unregistering from registry...');
+  await registryClient.unregister();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () =&gt; {
+  console.log('Service shutting down, unregistering from registry...');
+  await registryClient.unregister();
+  process.exit(0);
+});
+</code></pre>
+<h3>2. Update Your Service Information</h3>
+<p>Edit the <code>SERVICE_INFO</code> object in the client to accurately reflect your service:</p>
+<pre><code class="language-typescript">// Example for a Police Service
+const SERVICE_INFO = {
+  name: process.env.SERVICE_NAME || 'police-service',
+  url: `http://localhost:${process.env.PORT || 3000}`,
+  version: '1.0.0',
+  description: 'Police department service providing patrol management and emergency response',
+  endpoints: [
+    {
+      path: '/patrols',
+      methods: ['GET', 'POST'],
+      description: 'Manage police patrols'
+    },
+    {
+      path: '/patrols/available',
+      methods: ['GET'],
+      description: 'Get available patrols'
+    },
+    {
+      path: '/patrols/nearest',
+      methods: ['GET'],
+      description: 'Find nearest patrol to a location'
+    },
+    {
+      path: '/calls',
+      methods: ['GET', 'POST', 'PUT'],
+      description: 'Manage emergency calls'
+    }
+  ],
+  status: 'ONLINE'
+};
+</code></pre>
+<h3>3. Register Your Service on Startup</h3>
+<p>Update your main application file (<code>src/index.ts</code>) to register with the registry when the service starts:</p>
+<pre><code class="language-typescript">// src/index.ts
+import express from 'express';
+import cors from 'cors';
+import { json } from 'body-parser';
+import { OpenAPIValidator } from 'express-openapi-validator';
+import { join } from 'path';
+import errorHandler from './middleware/error-handler';
+import { registryClient } from './clients/registry-client';
+
+// Import controllers
+import patrolController from './controllers/patrol-controller';
+// Import other controllers as needed
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(json());
+
+// Serve OpenAPI spec
+app.use('/api-docs', express.static(join(__dirname, '../api')));
+
+// OpenAPI validation middleware
+app.use(
+  OpenAPIValidator.middleware({
+    apiSpec: join(__dirname, '../api/openapi.yaml'),
+    validateRequests: true,
+    validateResponses: true
+  })
+);
+
+// Register routes
+app.use('/patrols', patrolController);
+// Register other controllers with their base paths
+
+// Add a simple health check endpoint for the registry
+app.get('/health', (req, res) =&gt; {
+  res.json({ status: 'UP', timestamp: new Date().toISOString() });
+});
+
+// Error handling middleware
+app.use(errorHandler);
+
+// Start server
+app.listen(port, async () =&gt; {
+  console.log(`🚀 Service running at http://localhost:${port}`);
+  console.log(`📚 API documentation at http://localhost:${port}/api-docs`);
+  
+  // Register with the city service registry
+  const registered = await registryClient.register();
+  if (registered) {
+    console.log('Service successfully registered with the city registry');
+  } else {
+    console.warn('Failed to register with the city registry. Other services may not be able to discover this service.');
+  }
+});
+</code></pre>
+<h3>4. Creating a Service Discovery Utility</h3>
+<p>To make it easier to discover and communicate with other services, let's create a utility function:</p>
+<pre><code class="language-bash">touch services/your-service-name/src/utils/service-discovery.ts
+</code></pre>
+<p>Implement the service discovery utility:</p>
+<pre><code class="language-typescript">// src/utils/service-discovery.ts
+import axios from 'axios';
+import { registryClient } from '../clients/registry-client';
+
+export interface ServiceInfo {
+  name: string;
+  url: string;
+  version: string;
+  description: string;
+  endpoints: {
+    path: string;
+    methods: string[];
+    description: string;
+  }[];
+  status: string;
+}
+
+export class ServiceDiscovery {
+  /**
+   * Find a service by name
+   */
+  static async findService(name: string): Promise&lt;ServiceInfo | null&gt; {
+    return await registryClient.getServiceByName(name);
+  }
+  
+  /**
+   * Get all available services
+   */
+  static async getAllServices(): Promise&lt;ServiceInfo[]&gt; {
+    return await registryClient.getServices();
+  }
+  
+  /**
+   * Call another service's API
+   */
+  static async callService&lt;T = any&gt;(
+    serviceName: string, 
+    endpoint: string, 
+    method: 'get' | 'post' | 'put' | 'delete' = 'get',
+    data?: any
+  ): Promise&lt;T | null&gt; {
+    try {
+      const service = await this.findService(serviceName);
+      
+      if (!service || service.status !== 'ONLINE') {
+        console.error(`Service ${serviceName} not found or not available`);
+        return null;
+      }
+      
+      const url = `${service.url}${endpoint}`;
+      
+      let response;
+      switch (method) {
+        case 'get':
+          response = await axios.get(url);
+          break;
+        case 'post':
+          response = await axios.post(url, data);
+          break;
+        case 'put':
+          response = await axios.put(url, data);
+          break;
+        case 'delete':
+          response = await axios.delete(url);
+          break;
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Error calling service ${serviceName}:`, error);
+      return null;
+    }
+  }
+}
+</code></pre>
+<h2>Using the Service Registry</h2>
+<p>Now that your service is registered with the city registry, let's see how you can use it to discover and communicate with other services.</p>
+<h3>Example: Finding and Calling Another Service</h3>
+<p>Here's how you might use the service discovery utility in your code:</p>
+<pre><code class="language-typescript">// src/services/patrol-service.ts
+import { ServiceDiscovery } from '../utils/service-discovery';
+
+export const PatrolService = {
+  // ... other methods
+  
+  // Assign a patrol to a call and also notify the dispatch service
+  async assignToCall(patrolId: string, callId: string): Promise&lt;Patrol | undefined&gt; {
+    const patrol = PatrolRepository.findById(patrolId);
+    
+    if (!patrol || patrol.status !== PatrolStatus.AVAILABLE) {
+      return undefined;
+    }
+    
+    // Update the patrol in our local repository
+    const updatedPatrol = PatrolRepository.update(patrolId, {
+      activeCall: callId,
+      status: PatrolStatus.BUSY
+    });
+    
+    if (updatedPatrol) {
+      // Notify the dispatch service about the assignment
+      await ServiceDiscovery.callService(
+        'dispatch-service',
+        '/dispatch/assignments',
+        'post',
+        {
+          patrolId,
+          callId,
+          timestamp: new Date().toISOString(),
+          estimatedArrivalTime: calculateETA(patrol.location, callLocation)
+        }
+      );
+    }
+    
+    return updatedPatrol;
+  }
+};
+</code></pre>
+<h3>Example: Looking Up Multiple Services</h3>
+<pre><code class="language-typescript">// src/services/emergency-service.ts
+import { ServiceDiscovery } from '../utils/service-discovery';
+
+export const EmergencyService = {
+  // Coordinate a response to a major incident by finding all relevant services
+  async coordinateMajorIncident(incident: MajorIncident): Promise&lt;boolean&gt; {
+    try {
+      // Get all city services
+      const allServices = await ServiceDiscovery.getAllServices();
+      
+      // Find the services we need for this incident
+      const policeService = allServices.find(s =&gt; s.name === 'police-service');
+      const fireService = allServices.find(s =&gt; s.name === 'fire-service');
+      const ambulanceService = allServices.find(s =&gt; s.name === 'ambulance-service');
+      const trafficService = allServices.find(s =&gt; s.name === 'traffic-service');
+      
+      // Ensure all required services are available
+      if (!policeService || !fireService || !ambulanceService) {
+        console.error('Cannot coordinate response: Required services unavailable');
+        return false;
+      }
+      
+      // Dispatch required resources from each service
+      await Promise.all([
+        ServiceDiscovery.callService(
+          'police-service',
+          '/patrols/dispatch-multiple',
+          'post',
+          {
+            location: incident.location,
+            requiredUnits: incident.requiredPoliceUnits,
+            incidentId: incident.id
+          }
+        ),
+        ServiceDiscovery.callService(
+          'fire-service',
+          '/trucks/dispatch-multiple',
+          'post',
+          {
+            location: incident.location,
+            requiredUnits: incident.requiredFireUnits,
+            incidentId: incident.id
+          }
+        ),
+        ServiceDiscovery.callService(
+          'ambulance-service',
+          '/ambulances/dispatch-multiple',
+          'post',
+          {
+            location: incident.location,
+            requiredUnits: incident.requiredAmbulances,
+            incidentId: incident.id
+          }
+        )
+      ]);
+      
+      // If traffic service is available, optimize traffic signals
+      if (trafficService) {
+        await ServiceDiscovery.callService(
+          'traffic-service',
+          '/traffic-signals/emergency-route',
+          'post',
+          {
+            destination: incident.location,
+            priority: 'HIGH',
+            incidentId: incident.id
+          }
+        );
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error coordinating major incident response:', error);
+      return false;
+    }
+  }
+};
+</code></pre>
+<h2>Testing the Registry Integration</h2>
+<p>To test if your service successfully registers with the city registry:</p>
+<ol>
+<li>Start the city registry service first:</li>
+</ol>
+<pre><code class="language-bash">cd city-registry
+npm install
+npm start
+</code></pre>
+<ol start="2">
+<li>Start your service:</li>
+</ol>
+<pre><code class="language-bash">cd services/your-service-name
+npm install
+npm start
+</code></pre>
+<ol start="3">
+<li>Check if your service appears in the registry:</li>
+</ol>
+<pre><code class="language-bash">curl http://localhost:4000/services
+</code></pre>
+<ol start="4">
+<li>You should see your service listed in the response with its details.</li>
+</ol>
+<h2>Next Steps</h2>
+<p>Congratulations! Your service is now implemented and integrated with the city service registry. This means other services can discover it and communicate with it.</p>
+<p>In the next exercise, we'll explore how to implement more advanced communication patterns between services, such as event-based communication, circuit breakers, and more.</p>
+<p>Head over to <a href="./02-8-testing">Testing Your Implementation</a></p>
+
+    </main>
+</body>
+</html>

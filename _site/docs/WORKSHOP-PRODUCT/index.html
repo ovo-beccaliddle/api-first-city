@@ -1,0 +1,795 @@
+<h2>OVO Next Q1 2025 Workshop API First</h2>
+<h2>TODO</h2>
+<ul>
+<li>team?
+-&gt; Luke, list</li>
+<li>remove graphql/gravitee</li>
+<li>Slides Story / Example Mapping</li>
+<li>Slides/prints for each service</li>
+</ul>
+<p>Numbers:</p>
+<ul>
+<li>
+<p>7-9 'Pods'</p>
+</li>
+<li>
+<p>21-27 services</p>
+</li>
+<li>
+<p>3*21 = 63 engineers</p>
+</li>
+<li>
+<p>3*27 = 81 engineers</p>
+</li>
+<li>
+<p>38 product people in total (- X for portfolio)</p>
+</li>
+</ul>
+<h1>Pods</h1>
+<ul>
+<li>Emergency response
+Police
+Fire
+Ambulance
+Dispatch</li>
+<li>Energy
+Powerplant
+Powernet
+Electricity Meters</li>
+<li>Water
+Water Treatment Plant
+Water Supply pipes
+Water meters</li>
+<li>Traffic
+Traffic cameras
+Traffic lights
+Parking control</li>
+<li>Administration
+Permits
+Passports
+Fines</li>
+<li>Finance
+Budgetting
+? Auditing
+Reporting</li>
+<li>Parks and recreation
+Park Maintenance
+Festivals and events</li>
+<li>Commerce
+Permits
+Shopping centres
+Facilities (sports, arts)</li>
+<li>Health
+Hospitals
+Pharmacy</li>
+</ul>
+<h1>Elements per team / pod</h1>
+<ul>
+<li>Info sheet - Resource, fields - Description
+? - Actors (users)</li>
+<li>Story Map - Features
+<ul>
+<li>Flow over services in Pod</li>
+<li>More than one flow across Pods</li>
+<li>Something pub/sub?</li>
+</ul>
+</li>
+</ul>
+<p>Plus:</p>
+<ul>
+<li>At least one example worked out</li>
+</ul>
+<h1>Structure of assignments</h1>
+<p>Start with short explanation of Story Mapping: - A flow of functionality, achieving a goal - Overview - Slices and planning - API first: - The first slices are <em>easy</em>: resource, base (CRUD) actions - Flow for single services is simple, over multiple services is becomes more interesting</p>
+<p>In the 'Features' section for each individual service below, the type of assignment is reference between square brackets &quot;[1]&quot;. Mostly, there will be overlap and people will naturally go through different elements as they start story mapping and we will guide them through different types of implementations. If that doesn't happen, the specific assignments should trigger it.</p>
+<h2>Assignment type 1: Make a map with different situations for direct use of the service</h2>
+<p>Learning Goal: Understanding the domain, understanding the split over different services, API first
+Use: make it clear what can be done with the base service in isolation, document functionality and align with engineering
+But: Will not necessarily <em>drive</em> implementation, as engineers get that by just implementing base actions on resource
+Merge: Walk through stories with engineering, verify it's implemented as expected</p>
+<blockquote>
+<blockquote>
+<p>Q: Do merge here, or after second level?</p>
+</blockquote>
+</blockquote>
+<h2>Assignment type 2: When we have a broader goal, actually coming from a user, it gets more intersting. Integration within POD</h2>
+<p>Learning Goal: Slices, Iterative delivery, integration
+Use: Actual end-user functionality/goals, finding small slices to plan, drive new implementation</p>
+<p>Merge: talk through slices with engineering, trigger next steps in implementation</p>
+<p>[Another explanation: example mapping intro:</p>
+<ul>
+<li>Business rules and 'acceptance criteria'</li>
+<li>Examples</li>
+<li>Formulating examples to Scenarios</li>
+<li>Normally done with the whole team...
+]</li>
+</ul>
+<h2>Assignment type 3: More complicated functionality where you need to define the logic</h2>
+<p>Learning Goal: Example Mapping, Examples/Scenarios, going into detail
+Use: Specify 'complicated' business rules</p>
+<p>Merge: Talk through examples with engineering, trigger tests and implementation</p>
+<h2>Assignment type 4: Integrations that can be asynchronous, guaranteed delivery, pub/sub</h2>
+<p>Learning Goal: Broadcasting changes in state that are useful to potentially different interested parties
+Use: Use pub/sub to ensure information will be received, but not care about speed or response</p>
+<p>Merge: discuss functionality with engineering, trigger use of pub/sub</p>
+<h2>Assignment type 5: Gravitee and the Graph</h2>
+<p>Learning Goal: Some functionality is non-functional, technology and architecture are impacted by NFRs
+Use: Limited bandwidth can mean less room for many API calls, implement limited base functionality while allowing deeper functionality when full bandwidth is available</p>
+<p>Merge: discuss non-functional requirement with engineering, trigger use of Gravitee GraphQL facade</p>
+<h2>Assignment type 6: Scheduling</h2>
+<p>Learning goal: Dealing with recurring jobs and events
+Use: Some things need to be done on a recurring cadence, either from business needs (finance reporting) or functional ones (recurring events), which is triggering specific workflow in a different way</p>
+<p>Merge: discuss recurring triggers with engineering, trigger use of scheduled jobs</p>
+<h1>The assignments per service</h1>
+<h2>Pod: Emergency response</h2>
+<h3>Police</h3>
+<ul>
+<li>Resource: Police patrol
+Fields:
+<ul>
+<li>Location</li>
+<li>Id</li>
+<li>Type</li>
+<li>Active call
+Description: A police patrol (on foot, bike, car or horse!) can react to different types of calls. ...
+Features:
+<ul>
+<li>[1] A patrol can be on a call, triggered by:
+self-reported
+dispatch
+another patrol</li>
+<li>[2] A patrol can request help from ambulance, firefighters, other police patrols</li>
+<li>[3] A patrol of type X can respond to calls of type Y
+<ul>
+<li>traffic violation -&gt; car</li>
+<li>shoplifting -&gt; on foot, bike, car</li>
+<li>unrest in park -&gt; foot, bike, horse</li>
+<li>crowd control -&gt; horse, car, ME</li>
+</ul>
+</li>
+<li>[4] Patrols need to let Finance Reporting know what calls they respond to</li>
+</ul>
+</li>
+</ul>
+<h1>- [5] Patrols need access to the most crucial information even when in an area with low bandwith</h1>
+<ul>
+<li>[6] Patrols can be pre-planned in the case of events (crowd control, support, security)</li>
+</ul>
+</li>
+</ul>
+<h3>Fire</h3>
+<ul>
+<li>Resource: Fire truck
+Fields:
+<ul>
+<li>Id</li>
+<li>Location</li>
+<li>Type</li>
+<li>Active call</li>
+<li>Water pump capacity
+Description: A fire fighter truck comes with a team of firefighters, sometimes a ladder, the ability to pump water, and sometimes a water reservoir for locations where there's no easy access to a water supply. Fire fighters can respond to calls of different types. Some cars have divers, for when there's an incident in the water.
+Features:
+<ul>
+<li>[1] A fire truck can be on call, triggered by:
+dispatch
+another fire truck asking for assistance
+a police patrol asking for assistance</li>
+<li>[2] A fire truck can request help from ambulance and police patrols</li>
+<li>[3] A fire truck of type X can respond to calls of type Y
+<ul>
+<li>car in water -&gt; divers</li>
+<li>fire in zone without available water -&gt; truck with reservoir</li>
+<li>fire -&gt; any</li>
+</ul>
+</li>
+<li>[4] Fire trucks need to let Finance know what calls they respond to</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1>- [5] Fire trucks need access to the most crucial information even when in an area with low bandwith</h1>
+<p>- [2] Fire trucks need know where water supply pipes are
+- [6] Fire trucks need schedules maintenance and training</p>
+<h3>Ambulance</h3>
+<ul>
+<li>Resource: Ambulance
+Fields:
+<ul>
+<li>Id</li>
+<li>Location</li>
+<li>Active call
+Description: An ambulance comes with a driver and EMT, and can respond to different types of calls.
+Features:</li>
+<li>[1] An ambulance can be on call, triggered by:
+dispatch
+another ambulance asking for assistance
+a polict patrol or firetruck asking for assistance</li>
+<li>[2] An ambulance can request help from police patrols and traffic control</li>
+<li>[3] An ambulance can respond to calls of type Y
+<ul>
+<li>accident</li>
+<li>medical emergency</li>
+<li>potential for injuries (events, etc)</li>
+</ul>
+</li>
+<li>[4] An ambulance needs to let Finance know what calls they respond to</li>
+</ul>
+</li>
+</ul>
+<h1>- [5] An ambulance need access to the most crucial information even when in an area with low bandwith</h1>
+<ul>
+<li>[2] An ambulance needs know where hospitals are</li>
+<li>[2] An ambulance needs let a hospital know they are coming with a specific patient</li>
+<li>[6] An ambulance needs schedules inventory and training events</li>
+</ul>
+<h3>Dispatch</h3>
+<ul>
+<li>Resource: Dispatch
+Fields:
+<ul>
+<li>Id
+Description: Dispatch can be called to request an emergency service, such as a police patrol, ambulance of fire truck. Based on the specific needs, dispatch can send one or more of those to a location, either immediate or planned.
+Features:</li>
+<li>[1] A client can request an emergency service (police, fire, ambulance)</li>
+<li>[2] A free service (police patrol, ambulance, fire truck) can be sent on a call by dispatch</li>
+<li>[3] A client can report an emergency by type:
+<ul>
+<li>burglary</li>
+<li>assault</li>
+<li>fire</li>
+<li>traffic accident</li>
+<li>car in water</li>
+<li>...</li>
+</ul>
+</li>
+<li>[2] An emergency service can request additional services with high priority</li>
+<li>[4] Dispatch needs to let Finance know what calls are received, and what response was sent</li>
+</ul>
+</li>
+</ul>
+<h1>- [5] Dispatch needs to be able to assign calls to a service even when the recipients are in a low bandwidth area</h1>
+<h2>Pod: Energy</h2>
+<h3>Powerplant</h3>
+<ul>
+<li>Resource: Powerplant
+Fields:
+<ul>
+<li>Id</li>
+<li>Capacity (in units)</li>
+<li>Cost per unit</li>
+<li>Location</li>
+<li>Current delivery
+Description: A powerplant can deliver a certain amount of energy per minute, at a specific cost.
+Features:</li>
+<li>[1] A powerplant can deliver energy to any meter connected to it through the powernet</li>
+<li>[3] A powerplant can only deliver energy up to the total capacity, when energy is requested when the capacity is exhausted, it will be denied</li>
+<li>[4] A powerplant will let finance reporting know how much energy was delivered in a timespan, and at what price</li>
+<li>[3] A powerplant can have different capacity depending on the time of day</li>
+<li>[3] A powerplant can have different pricing based on the time of day</li>
+<li>[3] A powerplant can have different pricing based on capacity available</li>
+</ul>
+</li>
+</ul>
+<h3>Powernet</h3>
+<ul>
+<li>Resource: Utility pole
+Fields:
+<ul>
+<li>Id</li>
+<li>Capacity (in units)</li>
+<li>Connected meters</li>
+<li>Connected Powerplants</li>
+<li>Location
+Description: A utility pole distributes energy by connecting power plants to energy users (meters)
+Features:</li>
+<li>[2] A utility pole needs to be connected to a powerplant to be able to deliver energy</li>
+<li>[2] A utility pole can deliver energy to any number of connected meters</li>
+<li>[3] A utility pole can only deliver energy if the powerplant has sufficient capacity</li>
+<li>[3] A utility pole can deliver energy from multiple powerplants
+<ul>
+<li>And select based on capacity</li>
+<li>And select based on price</li>
+</ul>
+</li>
+<li>[3] A connected meter can deliver power back to the distributor as well, and act as a powerplant
+<ul>
+<li>Price of meter provided power is alway 80% of the lowest price of any connected powerplant</li>
+<li>If the total power from meters is above the distributor's capacity, the distributor goes off-line</li>
+</ul>
+</li>
+<li>[4 and 6] A utility pole reports the used capacity and number of connected meters every hour to Auditing</li>
+</ul>
+</li>
+</ul>
+<h3>Electricity Meters</h3>
+<ul>
+<li>Resource: Electricity meter
+Fields:
+<ul>
+<li>Id</li>
+<li>Current use</li>
+<li>Connected utility poles</li>
+<li>Current price per unit</li>
+<li>Capacity</li>
+<li>Location
+Description: An electricity meter draws power from a utility pole, as requested by its users
+Features:</li>
+<li>[1] A meter can report current use and connected utility poles, as well as current price</li>
+<li>[2] A meter can only draw power when connected to a utility poles</li>
+<li>[3] A meter can only draw as much as its maximum capacity</li>
+<li>[4 and 6] A meter needs to let Finance know how much power it's consuming per hour from which utility poles and at what price</li>
+<li>[3] A meter can return power to the utility poles if it is generating more power than it's using (solar panels)</li>
+</ul>
+</li>
+</ul>
+<h2>Pod: Water</h2>
+<h3>Water Treatment Plant</h3>
+<ul>
+<li>Resource: Water Treatment Plant
+Fields:
+<ul>
+<li>Id</li>
+<li>Capacity (in units)</li>
+<li>Cost per unit</li>
+<li>Location</li>
+<li>Current delivery</li>
+<li>Current water pressure</li>
+<li>Target water pressure
+Description: A water treatment plant can deliver a certain amount of water, at a specific cost.
+Features:</li>
+<li>[1] A water plant can deliver water to a certain capacity and pressure, and for a price</li>
+<li>[2] A treatment plant can deliver water to any water outlet (water meter) connected to it through the water supply pipes</li>
+<li>[3] A water treatment plant can only deliver water up to its total capacity, when water is requested when the capacity is exhausted, water pressure will drop</li>
+<li>[4 and 6] A treatment plant will let finance know how much water was delivered in a timespan, and at what price</li>
+</ul>
+</li>
+</ul>
+<h3>Water Supply pipes</h3>
+<ul>
+<li>Resource: Water Supply pipes
+Fields:
+<ul>
+<li>Id</li>
+<li>Capacity (in units)</li>
+<li>Pressure</li>
+<li>Allowed pressure</li>
+<li>Connected outlets</li>
+<li>Connected treatment plants</li>
+<li>Location
+Description: A water pipe transports water to users (water meters)
+Features:</li>
+<li>[1] A pipe has a location and capacity</li>
+<li>[2] A water pipe needs to be connected to a treatment plant to be able to deliver water</li>
+<li>[2] A water pipe can deliver water to any number of connected outlets</li>
+<li>[3] A water pipe can only deliver water if the treatment plant has sufficient capacity and pressure</li>
+<li>[4 and 6] A pipe reports the used capacity and number of connected meters every hour to Auditing</li>
+</ul>
+</li>
+</ul>
+<h3>Water outlet / meter</h3>
+<ul>
+<li>Resource: Water outlet
+Fields:
+<ul>
+<li>Id</li>
+<li>Current use</li>
+<li>Total use</li>
+<li>Connected pipe</li>
+<li>Current price per unit</li>
+<li>Current pressure</li>
+<li>Location
+Description: An water meter measures how much water is used by a water outlet (home, fire hydrant, ...)
+Features:</li>
+<li>[1] A meter can return the current use, pressure and pricing for water</li>
+<li>[2] A meter is always connected to a single pipe</li>
+<li>[3] A meter can only draw as much as its maximum water pressure capacity</li>
+<li>[4 and 6] A meter needs to let Finance know how much water it's consuming per hour from which pipe and at what price</li>
+<li>[5] The closest outlet to a location needs to be available in all circumstances to ensure even low bandwidth environments allow fire trucks to find a water outlet</li>
+</ul>
+</li>
+</ul>
+<h2>Traffic</h2>
+<h3>Traffic cameras</h3>
+<ul>
+<li>Resource: Traffic cameras
+Fields:
+<ul>
+<li>Id</li>
+<li>Location</li>
+<li>Type [speed, light]</li>
+<li>Traffic observation:
+<ul>
+<li>Location</li>
+<li>Location type (road, traffic light)</li>
+<li>Location state (speed limit, traffic light state)</li>
+<li>License plate</li>
+<li>Time</li>
+<li>Speed
+Description: A traffic camera observes traffic, and when a car drives faster than the allowed speed at a location, or crosses a street while the traffic light is red, it signals the transgression to the appropriate parties (Fines in Administration)
+Featuress:</li>
+</ul>
+</li>
+<li>[1] A traffic cam can observice speed and direction of a car, reporting an observed license plate.</li>
+<li>[2] A traffic camera should be able to find out if traffic lights are red or green at a certain time</li>
+<li>[2 and 4] A traffic camera can 'watch' traffic go by (Pub/Sub? direct calls also OK), and register its observations</li>
+<li>[3] A traffic camera can decide an observation is a transgression if:
+<ul>
+<li>Speed is higher than allowed on a road</li>
+<li>A car crosses when the light is red</li>
+<li>Speed is negative (wrong direction)</li>
+</ul>
+</li>
+<li>[4] A traffic cam should report every transgression to the Fines service in Administration</li>
+</ul>
+</li>
+</ul>
+<h3>Traffic lights</h3>
+<ul>
+<li>Resource: Traffic lights
+Fields:
+<ul>
+<li>Id</li>
+<li>Location
+<ul>
+<li>Road crossed</li>
+<li>Road</li>
+<li>Direction</li>
+</ul>
+</li>
+<li>Time</li>
+<li>State
+Description: A traffic light controls traffic at a specific road crossing. It can either allow traffic through (green) or stop it (red).
+Features:</li>
+<li>[1] A traffic light can be either red or green at any point in time</li>
+<li>[1] A traffic light can be switched from one state to the other on request</li>
+<li>[2 and 3] A traffic light on a road crossing should have the inverse state of another traffic light that controls the road crossed</li>
+<li>[2 and 3] A traffic light on a road crossing should have the same state as another light on the same crossing that is for a different direction</li>
+<li>[6] A traffic light can be scheduled to switch from state at a regular schedule</li>
+<li>[4] Any override of the programmed schedule should be reported to Administration Auditing service</li>
+</ul>
+</li>
+</ul>
+<h3>Parking control</h3>
+<ul>
+<li>Resource: Parking spot
+Fields:
+<ul>
+<li>Id</li>
+<li>Location
+<ul>
+<li>Road</li>
+<li>Parking location number</li>
+</ul>
+</li>
+<li>Time</li>
+<li>Rates</li>
+<li>Current rate</li>
+<li>State</li>
+<li>License plate
+Description: A parking spot is a place a car can be parked. The spot can either be occupied or not, and has rates for parking which can vary depending on the day and time.
+Features:</li>
+<li>[1] A parking spot has rates that can be requested by cars</li>
+<li>[3] A parking spot can be occupied, or not</li>
+<li>[3] A parking spot can be paid for, or not</li>
+<li>[4] If a parking spot is occupied, that information, including the paid amounts, rates and car, should be reported to Finance.</li>
+</ul>
+</li>
+</ul>
+<h2>Administration</h2>
+<h3>Permits</h3>
+<ul>
+<li>Resource: Permits
+Fields:
+<ul>
+<li>Id</li>
+<li>Event Type</li>
+<li>Event date</li>
+<li>Event location</li>
+<li>Recipient</li>
+<li>State
+Description: Permits can be requested for events. They can be approved or denied. Events are for a specific location and date(s).
+Features:</li>
+<li>[1] A permit can be requested and approved</li>
+<li>[2] A permit can need additional power or water</li>
+<li>[3] If a permit requires power or water, a distributor respectively pipe needs to be available at the location and have capacity to spare</li>
+<li>[4] A permit can have a specific cost, and once paid this should be reported to Finance</li>
+</ul>
+</li>
+</ul>
+<h3>Passports</h3>
+<ul>
+<li>Resource: Passport/ID
+Fields:
+<ul>
+<li>Id</li>
+<li>Person</li>
+<li>Location (address of the person)</li>
+<li>Valid to dates
+Description: Citizens can request a passport. They need this ID to be able to use public services, and identify themselves when they get a fine or are arrested. A passport is valid for 5 years. The passport costs €50,-
+Features:</li>
+<li>[1] A passport can be created and requested</li>
+<li>[3] If a passport is no longer valid, it should only return a notification that there is no valid passport</li>
+<li>[4] A passport costs money, and once paid this should be reported to Finance</li>
+<li>[6] Every day, any passport that expires should result in any open permits for the person identified by that passport to become invalid</li>
+</ul>
+</li>
+</ul>
+<h3>Fines</h3>
+<ul>
+<li>Resource: Fine
+Fields:
+<ul>
+<li>Id</li>
+<li>Type</li>
+<li>Cost</li>
+<li>Person</li>
+<li>Date issued</li>
+<li>Date paid
+Description: People can get fined for different reasons. The fine is always for a specific person, identified by their ID/Passport, and it needs to be paid in time.
+Features:</li>
+<li>[1] A fine can be issued against a person or a car</li>
+<li>A fine can be issued by... (auth?)</li>
+<li>[1] A fine can be paid</li>
+<li>[3] A fine needs to be paid withing a fixed period after it is issued. This period is different for different types of fines.</li>
+<li>[4] When a fine is paid, it should be reported to Finance</li>
+<li>[6] Every day, for any fine that is not paid and has a payment term coming within 7 days should send a message to the person the fine was issued to</li>
+<li>[2, 3 and 6] If a fine is not paid in time, an extra administrative cost is added per week it is late, and every time the cost increases another notification is sent to the person. When it is a month late, a police patrol is sent to retrieve the money, or break a leg / arrest.</li>
+</ul>
+</li>
+</ul>
+<h2>Finance</h2>
+<h3>Budgetting</h3>
+<ul>
+<li>Resource: Budget entry
+Fields:
+<ul>
+<li>Id</li>
+<li>Investment type</li>
+<li>Investment number</li>
+<li>Cost</li>
+<li>Expected value</li>
+<li>Investment period
+Description: The city council allocates budget for certain things to invest in police patrols, fire trucks, water treatment plants, energy plants, etc. The budget controls how much of these are available to the city. Each investment can have an expected value, in terms of energy sold, water used, fines paid or buildings and people saved.
+Features:</li>
+<li>[1] A budget entry can be created and changed over time</li>
+<li>[2] A budget entry should create new instances of the investment type that is being invested in</li>
+<li>[3] The city council needs to be able to get an overview of the total investments made per category and time period, as well as the expected value delivered</li>
+<li>[6] If an investment period ends, the item invested in should no longer be available</li>
+<li>[4] Finance reporting should always be notified of any investments made</li>
+</ul>
+</li>
+</ul>
+<h3>Financial reporting</h3>
+<ul>
+<li>Resource: Financial report
+Fields:
+<ul>
+<li>Id</li>
+<li>Report type</li>
+<li>Report amount</li>
+<li>Investment period</li>
+<li>Investment type</li>
+<li>Report date
+Description: Financial reports are for keeping track of both spending and incoming. The financial reports coming in are related to a Budget Entry, and are reported by other resource types, such as a police patrol or energy meter.
+Features:</li>
+<li>[1] A financial report entry can be created by any other resource</li>
+<li>[3] A financial report, calculating totals, can be requested for a period and by report types or investment types</li>
+<li>[4] Financial reports should never be lost (pub-sub)</li>
+<li>[6] At predefined schedules reports of all spending and income for a given period should be generated.</li>
+</ul>
+</li>
+</ul>
+<h2>Parks and recreation</h2>
+<h3>Park maintenance</h3>
+<ul>
+<li>Resource: Park Maintenance
+Fields:
+<ul>
+<li>Id</li>
+<li>Location</li>
+<li>Activity</li>
+<li>Date Planned</li>
+<li>Date Performed
+Description: Park maintenance is there to maintain parks and other public green. They do this by performing various activities, such as mowing the grass, pruning trees, chopping trees, placing benches, cleaning water, etc.
+Features:</li>
+<li>[1] An action of park maintenance can be created</li>
+<li>[4] Any action of park maintenance is reported to auditing</li>
+<li>[6] Park maintenance actions are often scheduled in advance, and be on a repeated schedule</li>
+<li>[3] Park maintenance action can also be requested by others, based on events (fallen tree, for instance) or simple requests (fear of fallen tree?)</li>
+</ul>
+</li>
+</ul>
+<h3>Festivals and events</h3>
+<ul>
+<li>Resource: Events
+Fields:
+<ul>
+<li>Id</li>
+<li>Location</li>
+<li>Event type</li>
+<li>Date</li>
+<li>Support needed</li>
+<li>Permits needed
+Description: Festivals and events can be planned for a location and date. Different types of events can have different needs for support (electricity, water, police, health services, etc.)
+Features:</li>
+<li>[1] An Event can be planned for a specific date and location</li>
+<li>[2] The necessary support and permits can be specified for an event, creating requests for other services</li>
+<li>[3] Specific types of events can only be given permit if specific support and permits are arranged
+<ul>
+<li>Police and ambulance presence for:
+<ul>
+<li>concerts</li>
+<li>political rallies</li>
+<li>protests</li>
+</ul>
+</li>
+<li>Food and health licensing for:
+<ul>
+<li>street/food markets</li>
+<li>festivals</li>
+</ul>
+</li>
+<li>...</li>
+</ul>
+</li>
+<li>[3] Once all permits and support are specified, the event can be scheduled</li>
+<li>[4] All events should be reported to auditing and finance</li>
+<li>[6] After the event, it should be removed</li>
+</ul>
+</li>
+</ul>
+<h2>Commerce</h2>
+<h3>Permits</h3>
+<ul>
+<li>Resource: Commerce Permits
+Fields:
+<ul>
+<li>Id</li>
+<li>Commerce type</li>
+<li>Location
+<ul>
+<li>Shopping centre</li>
+</ul>
+</li>
+<li>State</li>
+<li>Date</li>
+<li>Expiration date</li>
+<li>Cost
+Description: Commerce Permits can be requested for commercial activities, ranging from shops, restaurants, bars, markets, to street performers and car sales lots. They can be approved or denied.
+Features:</li>
+<li>[1] A commerce permit can be requested and approved</li>
+<li>[2 and 3] A commerce permit can need additional power or water or other types of (administrative) permits, depending on the commerce type:
+<ul>
+<li>Petrol station:
+<ul>
+<li>Fire hazard inspection permit</li>
+<li>Toxit materials permit</li>
+</ul>
+</li>
+<li>Club:
+<ul>
+<li>additional power meter and own distributor</li>
+<li>Sound isolation inspection</li>
+</ul>
+</li>
+<li>...</li>
+</ul>
+</li>
+<li>[4] A Commerce permit can have a specific cost per time period (tax), and this should be reported to Finance</li>
+<li>[6] Every month, a report on the amount of running commerce licenses per type, the amount that are issued, and which licenses will expire in the next month.</li>
+</ul>
+</li>
+</ul>
+<h3>Shopping centres</h3>
+<ul>
+<li>Resource: Shopping centre
+Fields:
+<ul>
+<li>Id</li>
+<li>Location</li>
+<li>Size (number of shops, restaurants, ...)
+Description: Shopping centres are areas of the city where commercial activities are encouraged. They require a level of investment from the city in terms of energy, traffic, parking and support, so only a limited number can be supported.
+Features:</li>
+<li>[1] A shopping centre can be created for a location and given a certain size</li>
+<li>[2] A shopping centre can only support a certain number of commercial activities, measured in the number of commerce permits active for the shopping center</li>
+<li>[2 and 3] A shopping center has a cost in terms of support and resources, depending on the size
+<ul>
+<li>1 police patrols per day per 15 commercial activities</li>
+<li>100 units of water per day per 10 commercial activities</li>
+<li>...</li>
+</ul>
+</li>
+<li>[6] A report on the occupancy of the shopping center is generated every month</li>
+</ul>
+</li>
+</ul>
+<h3>Facilities (sports, arts)</h3>
+<ul>
+<li>Resource: Facility
+Fields:
+<ul>
+<li>Id</li>
+<li>Location</li>
+<li>Type (arts, sports, ...)</li>
+<li>Permits</li>
+<li>Resources needed
+Description: Facilities are there to support elements of human activity that are not necessarily commercial in nature, such as sports facilities and arts (galleries, museums, theatre, concert halls, ...)
+Features:</li>
+<li>[1] A facility can be created at a location</li>
+<li>[1] A facility can be of different types</li>
+<li>[2 and 3] Different types of facilities need different resources:
+<ul>
+<li>a football field needs 10 units of water per day</li>
+<li>a football field needs 150 parking spots</li>
+<li>a theater needs its own power distributor</li>
+<li>a museum needs additional police patrols</li>
+</ul>
+</li>
+<li>[2 and 3] Different types of facilities need specific permits:
+<ul>
+<li>a concert hall needs late night noise permits</li>
+<li>a football field needs food preparation permits for hot dogs</li>
+</ul>
+</li>
+<li>[4] Any time a facility is created it should be reported through to the Adminstration Auditing service</li>
+</ul>
+</li>
+</ul>
+<h2>Health</h2>
+<h3>Hospitals</h3>
+<ul>
+<li>Resource: Hospital
+Fields:
+<ul>
+<li>Id</li>
+<li>Location</li>
+<li>Special services</li>
+<li>Capacity ER</li>
+<li>Capacity beds</li>
+<li>Occupied ER</li>
+<li>Occupied beds
+Description: A hospital is a necessary service in any city. Enough beds for the population of the city are necessary. A hospital has a capacity in terms of the amount of patients it can handle, and separately how many in ER it can support. It should also know how many are currently occupied.
+Features:</li>
+<li>[1] A hospital can be created with a certain capacity</li>
+<li>[2 and 3] A hospital should be able to tell an ambulance whether it has open capacity for a patient
+<ul>
+<li>Needing ER</li>
+<li>Needing a bed</li>
+<li>Needing a special service (skin transplant, heart transplant, ...)</li>
+</ul>
+</li>
+<li>[4] An hospital needs to let Finance and Auditing know what how many patients it has, and of which type (regular, ER, special)</li>
+<li>[5] The closest outlet to a location needs to be available in all circumstances to ensure even low bandwidth environments allow fire trucks to find a water outlet</li>
+</ul>
+</li>
+</ul>
+<h3>Pharmacy</h3>
+<ul>
+<li>Resource: Pharmacy
+Fields:
+<ul>
+<li>Id</li>
+<li>Location</li>
+<li>Supplies
+Description: A pharmacy has supplies of medicine and other medical supplies, and supplies hospitals and ambulances with those supplies.
+Features:</li>
+<li>[1] A pharmacy can be created at a specific location</li>
+<li>[2 and 3] A pharmacy can store supplies, which have a name, unit, price and available supply:
+<ul>
+<li>paracetamol, pills of 500mg, GBP 1, 5000</li>
+<li>bandage, 10cmx10m, GBP 5, 200</li>
+</ul>
+</li>
+<li>[2 and 3] Supplies can be withdrawn from a Pharmacy (by an ambulance or hospital) and:
+<ul>
+<li>An ambulance can only receive 5 rolls of bandage per re-supply</li>
+<li>A hospital can receive maximal 1000 pills of paracetamol per re-supply</li>
+<li>...</li>
+</ul>
+</li>
+<li>[4] An pharmacy needs to let Finance and Auditing know what both any new supplies, and and supplies done to any hospital or ambulance</li>
+<li>[6] Every week, a pharmacy needs to provide a full report on the current supplies to ensure there's no irregularities with sensitive drugs</li>
+</ul>
+</li>
+</ul>

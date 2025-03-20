@@ -1,0 +1,44 @@
+{
+  "name": "api-first-city-services-monorepo",
+  "version": "1.0.0",
+  "description": "API-First City Services Workshop",
+  "private": true,
+  "workspaces": [
+    "workshop",
+    "workshop/common",
+    "workshop/infrastructure/*",
+    "workshop/services/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean",
+    "start": "turbo run start",
+    "deploy": "turbo run deploy",
+    "serve:workshop": "eleventy --serve",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "setup": "node workshop/deployment/scripts/setup-workshop.js",
+    "setup-env": "cd workshop && ./setup-env.sh",
+    "k8s:setup": "sh workshop/deployment/scripts/setup-k3d.sh",
+    "run-all": "concurrently \"yarn workspace @city-services/service-registry dev\" \"yarn workspace @city-services/iam dev\" \"yarn workspace @city-services/sample dev\""
+  },
+  "keywords": [
+    "api-first",
+    "microservices",
+    "workshop",
+    "openapi"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "yarn@4.7.0",
+  "devDependencies": {
+    "@11ty/eleventy": "^3.0.0",
+    "prettier": "^3.5.3",
+    "turbo": "^2.4.4"
+  }
+}

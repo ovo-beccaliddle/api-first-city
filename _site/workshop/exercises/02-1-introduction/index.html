@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        code {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 0.2rem 0.4rem;
+        }
+        nav {
+            background-color: #f6f8fa;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 3px;
+        }
+        nav a {
+            margin-right: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+    </nav>
+    <main>
+        <h1>Building Your City Service: Introduction</h1>
+<p>Hey there, awesome city developer! 👋</p>
+<p>So you've designed your API contract in the previous exercise - congrats! Now comes the fun part: bringing your service to life with some actual code. This is where API-first really shines because you already have a clear roadmap of what you're building.</p>
+<h2>What This Exercise Is All About</h2>
+<p>In this exercise, we're going to implement your city service based on the API contract you created. Whether you're building a Police Department, Fire Station, Power Plant, or any other city service, the process will be similar. We'll use TypeScript and Express to create a robust, well-structured service that follows modern development practices.</p>
+<h2>What You'll Learn</h2>
+<p>By the time you finish this exercise, you'll be able to:</p>
+<ol>
+<li>Build a TypeScript service that perfectly implements your OpenAPI specification</li>
+<li>Use middleware to automatically validate requests and responses against your contract</li>
+<li>Structure your code in a clean, maintainable way using layers (controllers, services, repositories)</li>
+<li>Connect your service to the city service registry so others can discover it</li>
+<li>Test that your implementation matches your API contract exactly</li>
+</ol>
+<h2>Why API-First Makes Implementation Easier</h2>
+<p>When you follow the API-first approach, implementation becomes so much more straightforward:</p>
+<ul>
+<li><strong>Your API contract serves as your roadmap</strong> - no more wondering what endpoints you need or what data structures should look like</li>
+<li><strong>Request and response validation happens automatically</strong> - the OpenAPI validator will ensure your implementation matches your contract</li>
+<li><strong>You focus on business logic, not API structure</strong> - the &quot;what&quot; is already decided, so you can focus on the &quot;how&quot;</li>
+<li><strong>Other teams can integrate with your service immediately</strong> - they already know your API from the contract</li>
+<li><strong>Changes are more controlled</strong> - if you need to modify something, you update the contract first, then the implementation</li>
+</ul>
+<h2>Tools We'll Be Using</h2>
+<p>For this implementation, we'll use:</p>
+<ul>
+<li><strong>TypeScript</strong> - For type safety and better developer experience</li>
+<li><strong>Express.js</strong> - A lightweight web framework for Node.js</li>
+<li><strong>express-openapi-validator</strong> - To validate requests and responses against your OpenAPI spec</li>
+<li><strong>Node.js</strong> - Our runtime environment</li>
+<li><strong>In-memory storage</strong> - For simplicity (in a real app, you'd use a database)</li>
+</ul>
+<h2>A Quick Overview of What We'll Build</h2>
+<p>Here's the high-level structure we'll create:</p>
+<pre><code>services/your-service-name/
+├── api/
+│   └── openapi.yaml         # Your API specification
+├── src/
+│   ├── models/              # TypeScript interfaces matching your API schemas
+│   ├── repositories/        # Data access layer (simulated with in-memory storage)
+│   ├── services/            # Business logic layer
+│   ├── controllers/         # API endpoint handlers
+│   ├── middleware/          # Express middleware (validation, error handling)
+│   └── index.ts             # Main application file
+├── package.json             # Dependencies and scripts
+└── tsconfig.json            # TypeScript configuration
+</code></pre>
+<h2>Ready to Start Coding?</h2>
+<p>Let's do this! We'll break this down into manageable steps, starting with exploring the sample service we've provided.</p>
+<p>Head over to the next section: <a href="./02-2-setup">Setting Up Your Service Structure</a></p>
+
+    </main>
+</body>
+</html>

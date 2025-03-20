@@ -1,0 +1,40 @@
+<h1>API Gateway Infrastructure</h1>
+<p>This directory contains the infrastructure configuration for the Gravitee API Gateway used in the City Services platform, focused on PostgreSQL integration.</p>
+<h2>Setup</h2>
+<h3>PostgreSQL JDBC Driver Setup</h3>
+<p>Before building the Docker images, you need to download the PostgreSQL JDBC driver:</p>
+<pre><code class="language-bash">./download-jdbc-driver.sh
+</code></pre>
+<p>This script will download the PostgreSQL JDBC driver (postgresql-42.7.4.jar) to the current directory.</p>
+<h3>Building and Starting the Gateway</h3>
+<p>After downloading the JDBC driver, build and start the API Gateway infrastructure:</p>
+<pre><code class="language-bash">docker-compose -f docker-compose-apim.yml up -d --build
+</code></pre>
+<p>The <code>--build</code> flag ensures that the custom Docker images for the gateway and management API are built with the PostgreSQL JDBC driver installed.</p>
+<p>If you need to rebuild the images after making changes:</p>
+<pre><code class="language-bash">docker-compose -f docker-compose-apim.yml build --no-cache
+docker-compose -f docker-compose-apim.yml up -d
+</code></pre>
+<h2>Configuration</h2>
+<p>The API Gateway is configured to use PostgreSQL as its data store. The configuration is defined in:</p>
+<ol>
+<li><code>config.yaml</code> - Contains gateway configuration and PostgreSQL connection settings</li>
+<li><code>docker-compose-apim.yml</code> - Defines PostgreSQL, API Gateway, and Management API services</li>
+<li><code>Dockerfile.gateway</code> and <code>Dockerfile.management-api</code> - Custom Dockerfiles that copy the PostgreSQL JDBC driver into the images</li>
+</ol>
+<h3>PostgreSQL Configuration</h3>
+<p>The PostgreSQL database is configured with the following parameters:</p>
+<ul>
+<li>Database: gravitee</li>
+<li>Username: postgres</li>
+<li>Password: postgres</li>
+<li>Port: 5432</li>
+</ul>
+<h2>Simplified Services</h2>
+<p>The API Gateway infrastructure has been simplified to include only the essential services:</p>
+<ul>
+<li>PostgreSQL - Data storage for API Gateway and Management API</li>
+<li>API Gateway - Handles API requests (with built-in JDBC driver)</li>
+<li>Management API - Backend for administration (with built-in JDBC driver)</li>
+</ul>
+<p>Other services (MongoDB, Elasticsearch, Management UI, Portal UI) have been commented out to focus on the core gateway and PostgreSQL integration.</p>

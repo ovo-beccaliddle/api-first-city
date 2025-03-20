@@ -1,0 +1,36 @@
+services:
+  # Google Pub/Sub emulator for event-based communication
+  pubsub-emulator:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:emulators
+    command: gcloud beta emulators pubsub start --host-port=0.0.0.0:${PUBSUB_EMULATOR_PORT:-8085} --project=${PUBSUB_PROJECT_ID:-city-services}
+    ports:
+      - "${PUBSUB_EMULATOR_PORT:-8085}:${PUBSUB_EMULATOR_PORT:-8085}"
+    environment:
+      - PUBSUB_PROJECT_ID=${PUBSUB_PROJECT_ID:-city-services}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PUBSUB_EMULATOR_PORT:-8085}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.3'
+
+  # Optional: Topic setup service
+  # # This container will run once to create the default topics
+  # event-bus-setup:
+  #   build:
+  #     context: ../../
+  #     dockerfile: infrastructure/event-bus/Dockerfile
+  #     args:
+  #       - PACKAGE_PATH=infrastructure/event-bus
+  #   environment:
+  #     - NODE_ENV=${NODE_ENV:-development}
+  #     - PUBSUB_EMULATOR_HOST=${PUBSUB_EMULATOR_HOST:-pubsub-emulator:8085}
+  #     - PUBSUB_PROJECT_ID=${PUBSUB_PROJECT_ID:-city-services}
+  #   depends_on:
+  #     pubsub-emulator:
+  #       condition: service_healthy
+  #   restart: "no"  # Run once and exit 

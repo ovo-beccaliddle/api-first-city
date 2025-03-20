@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        code {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 0.2rem 0.4rem;
+        }
+        nav {
+            background-color: #f6f8fa;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 3px;
+        }
+        nav a {
+            margin-right: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+    </nav>
+    <main>
+        <h1>Creating Your Service Layer</h1>
+<p>Now that you have your data models and repositories set up, it's time to create the service layer. This layer contains your business logic and coordinates between your controllers (which handle HTTP requests) and your repositories (which handle data access).</p>
+<h2>Why Do We Need a Service Layer?</h2>
+<p>The service layer is where your application's actual business logic lives:</p>
+<ul>
+<li><strong>Separation of concerns</strong>: It separates business logic from controller logic and data access</li>
+<li><strong>Reusability</strong>: Business logic can be reused across different controllers</li>
+<li><strong>Testability</strong>: Business rules can be easily tested in isolation</li>
+<li><strong>Simplicity</strong>: Controllers stay simple (just handling HTTP) and repositories stay focused on data access</li>
+</ul>
+<p>Think of it this way:</p>
+<ul>
+<li><strong>Controllers</strong> decide how to handle HTTP requests and shape responses</li>
+<li><strong>Services</strong> implement the business rules and orchestrate data operations</li>
+<li><strong>Repositories</strong> handle the actual data access</li>
+</ul>
+<h2>Creating Your Service</h2>
+<p>Let's implement the service layer for one of your main resources.</p>
+<h3>1. Create a Service File</h3>
+<p>For each of your main resources, create a service file in the <code>src/services</code> directory:</p>
+<pre><code class="language-bash">touch services/your-service-name/src/services/your-resource-service.ts
+</code></pre>
+<p>For example:</p>
+<pre><code class="language-bash">touch services/your-service-name/src/services/patrol-service.ts
+</code></pre>
+<h3>2. Implement the Basic Service Structure</h3>
+<p>A service typically exports an object with methods that implement your business logic. Each method will usually call one or more repository methods and apply some business rules.</p>
+<p>Here's a template for a basic service:</p>
+<pre><code class="language-typescript">import { YourResource, CreateYourResourceRequest, UpdateYourResourceRequest } from '../models/your-resource';
+import { YourResourceRepository } from '../repositories/your-resource-repository';
+
+export const YourResourceService = {
+  // Get all resources
+  getAll: (): YourResource[] =&gt; {
+    return YourResourceRepository.findAll();
+  },
+  
+  // Get a resource by ID
+  getById: (id: string): YourResource | undefined =&gt; {
+    return YourResourceRepository.findById(id);
+  },
+  
+  // Create a new resource
+  create: (resource: CreateYourResourceRequest): YourResource =&gt; {
+    // Apply any business rules here
+    
+    return YourResourceRepository.create(resource);
+  },
+  
+  // Update an existing resource
+  update: (id: string, resource: UpdateYourResourceRequest): YourResource | undefined =&gt; {
+    // Apply any business rules here
+    
+    return YourResourceRepository.update(id, resource);
+  },
+  
+  // Delete a resource
+  delete: (id: string): boolean =&gt; {
+    return YourResourceRepository.delete(id);
+  }
+  
+  // Add more business logic methods as needed
+};
+</code></pre>
+<h3>3. Implement a Real Service</h3>
+<p>Let's implement a service for the police patrol example we've been using:</p>
+<pre><code class="language-typescript">// src/services/patrol-service.ts
+import { Patrol, PatrolType, PatrolStatus, CreatePatrolRequest, UpdatePatrolRequest } from '../models/patrol';
+import { PatrolRepository } from '../repositories/patrol-repository';
+
+export const PatrolService = {
+  // Get all patrols
+  getAllPatrols: (): Patrol[] =&gt; {
+    return PatrolRepository.findAll();
+  },
+  
+  // Get a patrol by ID
+  getPatrolById: (id: string): Patrol | undefined =&gt; {
+    return PatrolRepository.findById(id);
+  },
+  
+  // Get patrols by status
+  getPatrolsByStatus: (status: PatrolStatus): Patrol[] =&gt; {
+    return PatrolRepository.findByStatus(status);
+  },
+  
+  // Get available patrols
+  getAvailablePatrols: (): Patrol[] =&gt; {
+    return PatrolRepository.findAvailable();
+  },
+  
+  // Create a new patrol
+  createPatrol: (patrol: CreatePatrolRequest): Patrol =&gt; {
+    // Ensure the patrol starts with AVAILABLE status if not specified
+    if (!patrol.status) {
+      patrol.status = PatrolStatus.AVAILABLE;
+    }
+    
+    // Validate officer count based on patrol type
+    // Business rule: Car patrols need at least 2 officers, others can have 1
+    if (patrol.type === PatrolType.CAR &amp;&amp; patrol.officerCount &lt; 2) {
+      throw new Error('Car patrols require at least 2 officers');
+    }
+    
+    return PatrolRepository.create(patrol);
+  },
+  
+  // Update a patrol's location
+  updatePatrolLocation: (id: string, latitude: number, longitude: number): Patrol | undefined =&gt; {
+    return PatrolRepository.update(id, {
+      location: { latitude, longitude }
+    });
+  },
+  
+  // Assign a patrol to a call
+  assignToCall: (patrolId: string, callId: string): Patrol | undefined =&gt; {
+    const patrol = PatrolRepository.findById(patrolId);
+    
+    // Business rule: Only available patrols can be assigned
+    if (!patrol || patrol.status !== PatrolStatus.AVAILABLE) {
+      return undefined;
+    }
+    
+    return PatrolRepository.update(patrolId, {
+      activeCall: callId,
+      status: PatrolStatus.BUSY
+    });
+  },
+  
+  // Complete a call and make patrol available again
+  completeCall: (patrolId: string): Patrol | undefined =&gt; {
+    const patrol = PatrolRepository.findById(patrolId);
+    
+    // Business rule: Only patrols on active calls can complete them
+    if (!patrol || !patrol.activeCall) {
+      return undefined;
+    }
+    
+    return PatrolRepository.update(patrolId, {
+      activeCall: undefined,
+      status: PatrolStatus.AVAILABLE
+    });
+  },
+  
+  // Find the nearest available patrol to a location
+  findNearestPatrol: (latitude: number, longitude: number): Patrol | undefined =&gt; {
+    return PatrolRepository.findNearest(latitude, longitude);
+  },
+  
+  // Take a patrol out of service
+  takeOutOfService: (patrolId: string, reason: string): Patrol | undefined =&gt; {
+    const patrol = PatrolRepository.findById(patrolId);
+    
+    // Can't take a patrol with an active call out of service
+    if (!patrol || patrol.activeCall) {
+      return undefined;
+    }
+    
+    // In a real app, we might log the reason to a database
+    console.log(`Patrol ${patrolId} taken out of service: ${reason}`);
+    
+    return PatrolRepository.update(patrolId, {
+      status: PatrolStatus.OUT_OF_SERVICE
+    });
+  },
+  
+  // Return a patrol to service
+  returnToService: (patrolId: string): Patrol | undefined =&gt; {
+    const patrol = PatrolRepository.findById(patrolId);
+    
+    // Only out-of-service patrols can return to service
+    if (!patrol || patrol.status !== PatrolStatus.OUT_OF_SERVICE) {
+      return undefined;
+    }
+    
+    return PatrolRepository.update(patrolId, {
+      status: PatrolStatus.AVAILABLE
+    });
+  },
+  
+  // Delete a patrol
+  deletePatrol: (id: string): boolean =&gt; {
+    const patrol = PatrolRepository.findById(id);
+    
+    // Business rule: Can't delete a patrol that's on a call
+    if (patrol &amp;&amp; patrol.activeCall) {
+      throw new Error('Cannot delete a patrol that is currently on a call');
+    }
+    
+    return PatrolRepository.delete(id);
+  }
+};
+</code></pre>
+<h3>4. Example Services for Different City Services</h3>
+<p>Let's look at how services might be implemented for different city services:</p>
+<h4>Example: Fire Truck Service</h4>
+<pre><code class="language-typescript">// src/services/fire-truck-service.ts
+import { FireTruck, TruckType } from '../models/fire-truck';
+import { FireTruckRepository } from '../repositories/fire-truck-repository';
+
+export const FireTruckService = {
+  getAllTrucks: (): FireTruck[] =&gt; {
+    return FireTruckRepository.findAll();
+  },
+  
+  getTruckById: (id: string): FireTruck | undefined =&gt; {
+    return FireTruckRepository.findById(id);
+  },
+  
+  getAvailableTrucks: (): FireTruck[] =&gt; {
+    return FireTruckRepository.findByStatus('AVAILABLE');
+  },
+  
+  createTruck: (truck: Omit&lt;FireTruck, 'id'&gt;): FireTruck =&gt; {
+    // Business rule: Water capacity validation based on truck type
+    if (truck.type === TruckType.PUMPER &amp;&amp; truck.waterCapacity &lt; 1000) {
+      throw new Error('Pumper trucks must have at least 1000L water capacity');
+    }
+    
+    // Business rule: Crew count validation based on truck type
+    const minCrewCount = truck.type === TruckType.LADDER ? 5 : 3;
+    if (truck.crewCount &lt; minCrewCount) {
+      throw new Error(`${truck.type} trucks require at least ${minCrewCount} crew members`);
+    }
+    
+    return FireTruckRepository.create(truck);
+  },
+  
+  dispatchTruck: (truckId: string, emergencyId: string): FireTruck | undefined =&gt; {
+    const truck = FireTruckRepository.findById(truckId);
+    
+    // Can only dispatch available trucks
+    if (!truck || truck.status !== 'AVAILABLE') {
+      return undefined;
+    }
+    
+    return FireTruckRepository.update(truckId, {
+      status: 'RESPONDING',
+      activeCallId: emergencyId
+    });
+  },
+  
+  completeMission: (truckId: string): FireTruck | undefined =&gt; {
+    const truck = FireTruckRepository.findById(truckId);
+    
+    if (!truck || !truck.activeCallId) {
+      return undefined;
+    }
+    
+    return FireTruckRepository.update(truckId, {
+      status: 'RETURNING',
+      activeCallId: undefined
+    });
+  },
+  
+  returnToStation: (truckId: string): FireTruck | undefined =&gt; {
+    const truck = FireTruckRepository.findById(truckId);
+    
+    if (!truck || truck.status !== 'RETURNING') {
+      return undefined;
+    }
+    
+    return FireTruckRepository.update(truckId, {
+      status: 'AVAILABLE'
+    });
+  },
+  
+  findTrucksForEmergency: (emergencyType: string): FireTruck[] =&gt; {
+    // Business logic to determine which types of trucks are needed
+    // based on the type of emergency
+    const neededTypes: TruckType[] = [];
+    
+    if (emergencyType === 'BUILDING_FIRE') {
+      neededTypes.push(TruckType.PUMPER, TruckType.LADDER);
+    } else if (emergencyType === 'FOREST_FIRE') {
+      neededTypes.push(TruckType.PUMPER, TruckType.TANKER);
+    } else if (emergencyType === 'CAR_ACCIDENT') {
+      neededTypes.push(TruckType.RESCUE);
+    } else {
+      neededTypes.push(TruckType.PUMPER); // Default
+    }
+    
+    // Find available trucks of the needed types
+    const availableTrucks = FireTruckRepository.findByStatus('AVAILABLE');
+    return availableTrucks.filter(truck =&gt; neededTypes.includes(truck.type));
+  }
+};
+</code></pre>
+<h4>Example: Power Plant Service</h4>
+<pre><code class="language-typescript">// src/services/power-plant-service.ts
+import { PowerPlant, EnergySource } from '../models/power-plant';
+import { PowerPlantRepository } from '../repositories/power-plant-repository';
+
+export const PowerPlantService = {
+  getAllPlants: (): PowerPlant[] =&gt; {
+    return PowerPlantRepository.findAll();
+  },
+  
+  getPlantById: (id: string): PowerPlant | undefined =&gt; {
+    return PowerPlantRepository.findById(id);
+  },
+  
+  getOnlinePlants: (): PowerPlant[] =&gt; {
+    return PowerPlantRepository.findByStatus('ONLINE');
+  },
+  
+  getTotalCapacity: (): number =&gt; {
+    return PowerPlantRepository.getTotalCapacity();
+  },
+  
+  getCurrentOutput: (): number =&gt; {
+    return PowerPlantRepository.getCurrentOutput();
+  },
+  
+  // Check if the city has enough power capacity
+  hasEnoughCapacity: (requiredCapacity: number): boolean =&gt; {
+    const availableCapacity = PowerPlantService.getTotalCapacity();
+    const currentOutput = PowerPlantService.getCurrentOutput();
+    const remainingCapacity = availableCapacity - currentOutput;
+    
+    return remainingCapacity &gt;= requiredCapacity;
+  },
+  
+  // Business logic to request more power output
+  increaseOutput: (plantId: string, amount: number): PowerPlant | undefined =&gt; {
+    const plant = PowerPlantRepository.findById(plantId);
+    
+    if (!plant || plant.status !== 'ONLINE') {
+      return undefined;
+    }
+    
+    // Can't exceed capacity
+    if (plant.currentOutput + amount &gt; plant.capacity) {
+      throw new Error(`Cannot increase output by ${amount}MW, would exceed plant capacity`);
+    }
+    
+    return PowerPlantRepository.update(plantId, {
+      currentOutput: plant.currentOutput + amount
+    });
+  },
+  
+  // Business logic to reduce power output
+  decreaseOutput: (plantId: string, amount: number): PowerPlant | undefined =&gt; {
+    const plant = PowerPlantRepository.findById(plantId);
+    
+    if (!plant || plant.status !== 'ONLINE') {
+      return undefined;
+    }
+    
+    // Can't go below minimum output (we'll say 10% of capacity for this example)
+    const minimumOutput = plant.capacity * 0.1;
+    if (plant.currentOutput - amount &lt; minimumOutput) {
+      throw new Error(`Cannot decrease output by ${amount}MW, would go below minimum output`);
+    }
+    
+    return PowerPlantRepository.update(plantId, {
+      currentOutput: plant.currentOutput - amount
+    });
+  },
+  
+  // Calculate power plant efficiency
+  calculateEfficiency: (plantId: string): number | undefined =&gt; {
+    const plant = PowerPlantRepository.findById(plantId);
+    
+    if (!plant) {
+      return undefined;
+    }
+    
+    // Business logic: different sources have different efficiency formulas
+    // This is just a simple example
+    let baseEfficiency = 0;
+    
+    switch (plant.source) {
+      case EnergySource.NUCLEAR:
+        baseEfficiency = 90;
+        break;
+      case EnergySource.SOLAR:
+        baseEfficiency = 75;
+        break;
+      case EnergySource.WIND:
+        baseEfficiency = 70;
+        break;
+      default:
+        baseEfficiency = 60;
+    }
+    
+    // Current load affects efficiency
+    const loadFactor = plant.currentOutput / plant.capacity;
+    // Most efficient at 80-90% capacity
+    const loadEfficiency = 100 - Math.abs(0.85 - loadFactor) * 20;
+    
+    const efficiency = (baseEfficiency + loadEfficiency) / 2;
+    
+    return Math.round(efficiency);
+  },
+  
+  // Schedule maintenance for a plant
+  scheduleMaintenance: (plantId: string, startDate: Date): PowerPlant | undefined =&gt; {
+    const plant = PowerPlantRepository.findById(plantId);
+    
+    if (!plant) {
+      return undefined;
+    }
+    
+    // Business rule: Can't schedule maintenance if it would leave us with insufficient capacity
+    const otherPlantsCapacity = PowerPlantService.getTotalCapacity() - plant.capacity;
+    const currentOutput = PowerPlantService.getCurrentOutput() - plant.currentOutput;
+    
+    if (currentOutput &gt; otherPlantsCapacity * 0.9) {
+      throw new Error('Cannot schedule maintenance - would leave insufficient reserve capacity');
+    }
+    
+    // In a real app, we'd store the maintenance schedule somewhere
+    console.log(`Maintenance scheduled for plant ${plantId} starting on ${startDate.toISOString()}`);
+    
+    return plant;
+  }
+};
+</code></pre>
+<h3>5. Advanced Service Patterns</h3>
+<p>As your service grows, you might want to implement more sophisticated patterns:</p>
+<h4>Handling Asynchronous Operations</h4>
+<p>Services often need to handle asynchronous operations, like API calls or database queries:</p>
+<pre><code class="language-typescript">import { Patrol, PatrolStatus } from '../models/patrol';
+import { PatrolRepository } from '../repositories/patrol-repository';
+import { NotificationService } from './notification-service';
+
+export const PatrolService = {
+  // ... other methods
+  
+  // Asynchronously assign a patrol to a call
+  assignToCall: async (patrolId: string, callId: string): Promise&lt;Patrol | undefined&gt; =&gt; {
+    const patrol = PatrolRepository.findById(patrolId);
+    
+    if (!patrol || patrol.status !== PatrolStatus.AVAILABLE) {
+      return undefined;
+    }
+    
+    // Update the patrol
+    const updatedPatrol = PatrolRepository.update(patrolId, {
+      activeCall: callId,
+      status: PatrolStatus.BUSY
+    });
+    
+    if (updatedPatrol) {
+      // Notify other systems that the patrol has been assigned
+      await NotificationService.sendNotification('PATROL_ASSIGNED', {
+        patrolId,
+        callId,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Log the assignment
+      console.log(`Patrol ${patrolId} assigned to call ${callId}`);
+    }
+    
+    return updatedPatrol;
+  }
+};
+</code></pre>
+<h4>Implementing Domain Events</h4>
+<p>For more complex business logic, you might want to implement a domain event system:</p>
+<pre><code class="language-typescript">// src/services/event-bus.ts
+type EventHandler&lt;T&gt; = (data: T) =&gt; void | Promise&lt;void&gt;;
+
+export class EventBus {
+  private static handlers: Record&lt;string, EventHandler&lt;any&gt;[]&gt; = {};
+  
+  static subscribe&lt;T&gt;(eventType: string, handler: EventHandler&lt;T&gt;): void {
+    if (!this.handlers[eventType]) {
+      this.handlers[eventType] = [];
+    }
+    this.handlers[eventType].push(handler);
+  }
+  
+  static async publish&lt;T&gt;(eventType: string, data: T): Promise&lt;void&gt; {
+    const handlers = this.handlers[eventType] || [];
+    
+    await Promise.all(handlers.map(handler =&gt; handler(data)));
+  }
+}
+
+// Using the event bus in your service
+import { EventBus } from './event-bus';
+
+export const PatrolService = {
+  // ... other methods
+  
+  completeCall: async (patrolId: string): Promise&lt;Patrol | undefined&gt; =&gt; {
+    const patrol = PatrolRepository.findById(patrolId);
+    
+    if (!patrol || !patrol.activeCall) {
+      return undefined;
+    }
+    
+    const callId = patrol.activeCall;
+    
+    const updatedPatrol = PatrolRepository.update(patrolId, {
+      activeCall: undefined,
+      status: PatrolStatus.AVAILABLE
+    });
+    
+    if (updatedPatrol) {
+      // Publish a domain event
+      await EventBus.publish('CallCompleted', {
+        patrolId,
+        callId,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    return updatedPatrol;
+  }
+};
+
+// Register event handlers elsewhere in your code
+EventBus.subscribe('CallCompleted', async (data) =&gt; {
+  console.log(`Call ${data.callId} completed by patrol ${data.patrolId}`);
+  // Update call status, generate reports, etc.
+});
+</code></pre>
+<h2>Next Steps</h2>
+<p>You've now created the service layer, which contains the business logic for your application. Next, let's implement the controllers, which will handle HTTP requests and call the appropriate service methods.</p>
+<p>Head over to <a href="./02-6-controllers">Implementing Your Controllers</a></p>
+
+    </main>
+</body>
+</html>

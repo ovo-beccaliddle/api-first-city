@@ -1,0 +1,94 @@
+<h1>Service Registry</h1>
+<p>This service provides service discovery and registration for all microservices in the API-First City project.</p>
+<h2>Features</h2>
+<ul>
+<li>Service registration and discovery</li>
+<li>Health monitoring with heartbeats</li>
+<li>Service metadata management</li>
+<li>Client library for easy integration</li>
+<li>Comprehensive test suite</li>
+</ul>
+<h2>Getting Started</h2>
+<h3>Prerequisites</h3>
+<ul>
+<li>Node.js 18+</li>
+<li>Yarn</li>
+</ul>
+<h3>Installation</h3>
+<pre><code class="language-bash">yarn install
+</code></pre>
+<h3>Development</h3>
+<pre><code class="language-bash">yarn dev
+</code></pre>
+<h3>Build</h3>
+<pre><code class="language-bash">yarn build
+</code></pre>
+<h3>Running</h3>
+<pre><code class="language-bash">yarn start
+</code></pre>
+<h2>Testing</h2>
+<p>This service uses Vitest for comprehensive testing. See the <a href="./test/README.md">testing documentation</a> for details.</p>
+<pre><code class="language-bash"># Run all tests
+yarn test
+
+# Run tests in watch mode
+yarn test:watch
+
+# Run tests with UI
+yarn test:ui
+</code></pre>
+<h2>Environment Variables</h2>
+<p>Create a <code>.env</code> file in the root of the service with the following variables:</p>
+<pre><code>PORT=3000
+NODE_ENV=development
+</code></pre>
+<h2>Project Structure</h2>
+<pre><code>src/
+  ├── client.ts      # Service Registry client for other services
+  ├── server.ts      # Express server and API endpoints
+  └── index.ts       # Entry point and exports
+test/
+  ├── __mocks__/     # Test mocks
+  ├── server.test.ts # API tests
+  ├── client.test.ts # Client library tests
+  ├── registry.test.ts # Service Registry class tests
+  ├── integration.test.ts # Integration tests
+  └── README.md      # Testing documentation
+dist/                # Compiled output
+</code></pre>
+<h2>API Endpoints</h2>
+<ul>
+<li><code>POST /register</code> - Register a new service</li>
+<li><code>GET /services</code> - List all registered services</li>
+<li><code>GET /services/:name</code> - Get details for a specific service</li>
+<li><code>PUT /services/:name</code> - Update a service's details</li>
+<li><code>DELETE /services/:name</code> - Remove a service</li>
+<li><code>POST /heartbeat/:name</code> - Record a heartbeat for a service</li>
+<li><code>GET /health</code> - Service health check</li>
+</ul>
+<h2>Client Library</h2>
+<p>The client library is exported from this package and can be used by other services to interact with the registry:</p>
+<pre><code class="language-typescript">import { ServiceRegistryClient } from '@city-services/service-registry';
+
+const client = new ServiceRegistryClient({
+  registryUrl: 'http://service-registry:3000',
+  serviceName: 'my-service',
+  serviceUrl: 'http://my-service:8080',
+  healthCheckUrl: 'http://my-service:8080/health',
+  metadata: { version: '1.0.0' },
+});
+
+// Register the service
+await client.register();
+
+// Discover another service
+const otherService = await client.discover('other-service');
+</code></pre>
+<h2>Testing Metrics</h2>
+<p>This service has a comprehensive test suite with:</p>
+<ul>
+<li>43 tests across 4 test files</li>
+<li>Unit tests for core functionality</li>
+<li>Integration tests for API endpoints</li>
+<li>Client and server interaction tests</li>
+</ul>

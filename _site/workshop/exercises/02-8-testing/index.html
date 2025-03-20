@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        code {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 0.2rem 0.4rem;
+        }
+        nav {
+            background-color: #f6f8fa;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 3px;
+        }
+        nav a {
+            margin-right: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+    </nav>
+    <main>
+        <h1>Testing Your City Service Implementation</h1>
+<p>Your city service is now fully implemented with models, repositories, services, controllers, and registry integration. But before we can celebrate, we need to make sure everything works as expected. Testing is a critical part of the API-first approach, ensuring that your implementation adheres to your API contract.</p>
+<h2>Why Testing Matters</h2>
+<p>Testing your service implementation offers several benefits:</p>
+<ul>
+<li><strong>Contract validation</strong>: Ensures your service behaves according to the API contract</li>
+<li><strong>Bug detection</strong>: Catches issues before they affect other services or users</li>
+<li><strong>Regression prevention</strong>: Makes sure new changes don't break existing functionality</li>
+<li><strong>Documentation</strong>: Tests serve as living documentation of how your service should behave</li>
+<li><strong>Confidence</strong>: Gives you and other services' developers confidence in your implementation</li>
+</ul>
+<h2>Types of Tests for Your Service</h2>
+<p>We'll explore different types of tests for your city service:</p>
+<h3>1. API Contract Testing</h3>
+<p>This validates that your implementation adheres to the OpenAPI specification.</p>
+<h3>2. Functional Testing</h3>
+<p>This verifies that the service's business logic works correctly.</p>
+<h3>3. Integration Testing</h3>
+<p>This checks that your service works correctly with other services.</p>
+<h2>Testing Your API Contract</h2>
+<p>The first level of testing is ensuring your implementation follows your API contract. The OpenAPI validator middleware you've already set up helps with this at runtime, but let's also create some explicit tests.</p>
+<h3>1. Set Up Testing Environment</h3>
+<p>First, let's add some testing tools to your project:</p>
+<pre><code class="language-bash">cd services/your-service-name
+npm install --save-dev jest supertest @types/jest @types/supertest ts-jest
+</code></pre>
+<h3>2. Configure Jest</h3>
+<p>Create a Jest configuration file:</p>
+<pre><code class="language-bash">touch jest.config.js
+</code></pre>
+<p>Add the following configuration:</p>
+<pre><code class="language-javascript">// jest.config.js
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  roots: ['&lt;rootDir&gt;/src'],
+  testMatch: ['**/*.test.ts'],
+  verbose: true
+};
+</code></pre>
+<p>Add test scripts to your package.json:</p>
+<pre><code class="language-json">&quot;scripts&quot;: {
+  &quot;start&quot;: &quot;ts-node src/index.ts&quot;,
+  &quot;build&quot;: &quot;tsc&quot;,
+  &quot;test&quot;: &quot;jest&quot;,
+  &quot;test:watch&quot;: &quot;jest --watch&quot;
+}
+</code></pre>
+<h3>3. Create API Contract Tests</h3>
+<p>Create a directory for your tests:</p>
+<pre><code class="language-bash">mkdir -p services/your-service-name/src/__tests__
+</code></pre>
+<p>Now, let's create a test file for your API endpoints. Here's an example for the patrol controller:</p>
+<pre><code class="language-typescript">// src/__tests__/patrol-api.test.ts
+import request from 'supertest';
+import express from 'express';
+import { json } from 'body-parser';
+import patrolController from '../controllers/patrol-controller';
+import { OpenAPIValidator } from 'express-openapi-validator';
+import { join } from 'path';
+import errorHandler from '../middleware/error-handler';
+
+// Create a test app
+const app = express();
+app.use(json());
+
+// OpenAPI validation middleware
+app.use(
+  OpenAPIValidator.middleware({
+    apiSpec: join(__dirname, '../../api/openapi.yaml'),
+    validateRequests: true,
+    validateResponses: true
+  })
+);
+
+// Register the controller
+app.use('/patrols', patrolController);
+
+// Error handling middleware
+app.use(errorHandler);
+
+describe('Patrol API', () =&gt; {
+  // Test GET /patrols
+  test('GET /patrols should return an array of patrols', async () =&gt; {
+    const response = await request(app).get('/patrols');
+    
+    expect(response.status).toBe(200);
+    expect(Array.isArray(response.body)).toBe(true);
+    
+    // If we have data, validate the structure of a patrol
+    if (response.body.length &gt; 0) {
+      const patrol = response.body[0];
+      expect(patrol).toHaveProperty('id');
+      expect(patrol).toHaveProperty('location');
+      expect(patrol.location).toHaveProperty('latitude');
+      expect(patrol.location).toHaveProperty('longitude');
+      expect(patrol).toHaveProperty('type');
+      expect(patrol).toHaveProperty('status');
+    }
+  });
+  
+  // Test GET /patrols/:id
+  test('GET /patrols/:id should return a single patrol', async () =&gt; {
+    // First get all patrols to find a valid ID
+    const allResponse = await request(app).get('/patrols');
+    
+    if (allResponse.body.length === 0) {
+      // Skip this test if no patrols exist
+      console.log('No patrols found, skipping test');
+      return;
+    }
+    
+    const patrolId = allResponse.body[0].id;
+    const response = await request(app).get(`/patrols/${patrolId}`);
+    
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('id', patrolId);
+  });
+  
+  // Test GET /patrols/:id with invalid ID
+  test('GET /patrols/:id with invalid ID should return 404', async () =&gt; {
+    const response = await request(app).get('/patrols/invalid-id');
+    
+    expect(response.status).toBe(404);
+  });
+  
+  // Test POST /patrols
+  test('POST /patrols should create a new patrol', async () =&gt; {
+    const newPatrol = {
+      type: 'CAR',
+      location: {
+        latitude: 40.7128,
+        longitude: -74.0060
+      },
+      officerCount: 2,
+      status: 'AVAILABLE'
+    };
+    
+    const response = await request(app)
+      .post('/patrols')
+      .send(newPatrol)
+      .set('Accept', 'application/json')
+      .set('Content-Type', 'application/json');
+    
+    expect(response.status).toBe(201);
+    expect(response.body).toHaveProperty('id');
+    expect(response.body).toHaveProperty('type', newPatrol.type);
+    expect(response.body).toHaveProperty('status', newPatrol.status);
+    expect(response.body.location).toEqual(newPatrol.location);
+  });
+  
+  // Test POST /patrols with invalid data
+  test('POST /patrols with invalid data should return 400', async () =&gt; {
+    const invalidPatrol = {
+      // Missing required fields
+      type: 'CAR'
+    };
+    
+    const response = await request(app)
+      .post('/patrols')
+      .send(invalidPatrol)
+      .set('Accept', 'application/json')
+      .set('Content-Type', 'application/json');
+    
+    expect(response.status).toBe(400);
+  });
+  
+  // Test PUT /patrols/:id/location
+  test('PUT /patrols/:id/location should update a patrol\'s location', async () =&gt; {
+    // First get all patrols to find a valid ID
+    const allResponse = await request(app).get('/patrols');
+    
+    if (allResponse.body.length === 0) {
+      // Skip this test if no patrols exist
+      console.log('No patrols found, skipping test');
+      return;
+    }
+    
+    const patrolId = allResponse.body[0].id;
+    const newLocation = {
+      latitude: 40.7129,
+      longitude: -74.0061
+    };
+    
+    const response = await request(app)
+      .put(`/patrols/${patrolId}/location`)
+      .send(newLocation)
+      .set('Accept', 'application/json')
+      .set('Content-Type', 'application/json');
+    
+    expect(response.status).toBe(200);
+    expect(response.body.location).toEqual(newLocation);
+  });
+  
+  // Additional tests for other endpoints...
+});
+</code></pre>
+<h3>4. Run Your Tests</h3>
+<p>Run your API contract tests:</p>
+<pre><code class="language-bash">npm test
+</code></pre>
+<h2>Testing Business Logic</h2>
+<p>Next, let's test the business logic in your service layer. This ensures that your service behaves correctly according to your business rules.</p>
+<h3>Create Service Tests</h3>
+<p>Create a test file for your service:</p>
+<pre><code class="language-typescript">// src/__tests__/patrol-service.test.ts
+import { PatrolService } from '../services/patrol-service';
+import { PatrolRepository } from '../repositories/patrol-repository';
+import { PatrolStatus, PatrolType } from '../models/patrol';
+
+// Mock the repository
+jest.mock('../repositories/patrol-repository');
+
+describe('PatrolService', () =&gt; {
+  beforeEach(() =&gt; {
+    // Clear all mocks between tests
+    jest.clearAllMocks();
+  });
+  
+  // Test getting all patrols
+  test('getAllPatrols should return all patrols from repository', () =&gt; {
+    // Arrange
+    const mockPatrols = [
+      { id: '1', type: PatrolType.CAR, status: PatrolStatus.AVAILABLE, location: { latitude: 1, longitude: 1 }, officerCount: 2 },
+      { id: '2', type: PatrolType.BIKE, status: PatrolStatus.BUSY, location: { latitude: 2, longitude: 2 }, officerCount: 1 }
+    ];
+    
+    // Set up the mock
+    (PatrolRepository.findAll as jest.Mock).mockReturnValue(mockPatrols);
+    
+    // Act
+    const result = PatrolService.getAllPatrols();
+    
+    // Assert
+    expect(PatrolRepository.findAll).toHaveBeenCalled();
+    expect(result).toEqual(mockPatrols);
+  });
+  
+  // Test creating a patrol
+  test('createPatrol should validate officer count for car patrols', () =&gt; {
+    // Arrange
+    const invalidPatrol = {
+      type: PatrolType.CAR,
+      status: PatrolStatus.AVAILABLE,
+      location: { latitude: 1, longitude: 1 },
+      officerCount: 1 // Invalid: Car patrols need at least 2 officers
+    };
+    
+    // Act &amp; Assert
+    expect(() =&gt; PatrolService.createPatrol(invalidPatrol)).toThrow();
+    expect(PatrolRepository.create).not.toHaveBeenCalled();
+  });
+  
+  test('createPatrol should set default status if not provided', () =&gt; {
+    // Arrange
+    const patrolWithoutStatus = {
+      type: PatrolType.BIKE,
+      location: { latitude: 1, longitude: 1 },
+      officerCount: 1
+    };
+    
+    const expectedPatrolWithStatus = {
+      ...patrolWithoutStatus,
+      status: PatrolStatus.AVAILABLE
+    };
+    
+    const createdPatrol = {
+      id: '123',
+      ...expectedPatrolWithStatus
+    };
+    
+    // Set up the mock
+    (PatrolRepository.create as jest.Mock).mockReturnValue(createdPatrol);
+    
+    // Act
+    const result = PatrolService.createPatrol(patrolWithoutStatus);
+    
+    // Assert
+    expect(PatrolRepository.create).toHaveBeenCalledWith(expectedPatrolWithStatus);
+    expect(result).toEqual(createdPatrol);
+  });
+  
+  // Test assigning a patrol to a call
+  test('assignToCall should update patrol status and set active call', () =&gt; {
+    // Arrange
+    const patrolId = '123';
+    const callId = '456';
+    
+    const availablePatrol = {
+      id: patrolId,
+      type: PatrolType.CAR,
+      status: PatrolStatus.AVAILABLE,
+      location: { latitude: 1, longitude: 1 },
+      officerCount: 2
+    };
+    
+    const updatedPatrol = {
+      ...availablePatrol,
+      status: PatrolStatus.BUSY,
+      activeCall: callId
+    };
+    
+    // Set up the mocks
+    (PatrolRepository.findById as jest.Mock).mockReturnValue(availablePatrol);
+    (PatrolRepository.update as jest.Mock).mockReturnValue(updatedPatrol);
+    
+    // Act
+    const result = PatrolService.assignToCall(patrolId, callId);
+    
+    // Assert
+    expect(PatrolRepository.findById).toHaveBeenCalledWith(patrolId);
+    expect(PatrolRepository.update).toHaveBeenCalledWith(patrolId, {
+      status: PatrolStatus.BUSY,
+      activeCall: callId
+    });
+    expect(result).toEqual(updatedPatrol);
+  });
+  
+  test('assignToCall should not assign unavailable patrol', () =&gt; {
+    // Arrange
+    const patrolId = '123';
+    const callId = '456';
+    
+    const busyPatrol = {
+      id: patrolId,
+      type: PatrolType.CAR,
+      status: PatrolStatus.BUSY,
+      location: { latitude: 1, longitude: 1 },
+      officerCount: 2,
+      activeCall: '789'
+    };
+    
+    // Set up the mock
+    (PatrolRepository.findById as jest.Mock).mockReturnValue(busyPatrol);
+    
+    // Act
+    const result = PatrolService.assignToCall(patrolId, callId);
+    
+    // Assert
+    expect(PatrolRepository.findById).toHaveBeenCalledWith(patrolId);
+    expect(PatrolRepository.update).not.toHaveBeenCalled();
+    expect(result).toBeUndefined();
+  });
+  
+  // Additional tests for other service methods...
+});
+</code></pre>
+<h2>Integration Testing with the Registry</h2>
+<p>Finally, let's test that your service properly registers with the city registry and can communicate with other services.</p>
+<h3>Create Registry Integration Tests</h3>
+<pre><code class="language-typescript">// src/__tests__/registry-integration.test.ts
+import axios from 'axios';
+import { registryClient } from '../clients/registry-client';
+import { ServiceDiscovery } from '../utils/service-discovery';
+
+// Mock axios
+jest.mock('axios');
+
+describe('Registry Integration', () =&gt; {
+  beforeEach(() =&gt; {
+    jest.clearAllMocks();
+  });
+  
+  // Test service registration
+  test('registryClient.register should register service with the registry', async () =&gt; {
+    // Arrange
+    (axios.post as jest.Mock).mockResolvedValue({ status: 200, data: { success: true } });
+    
+    // Act
+    const result = await registryClient.register();
+    
+    // Assert
+    expect(axios.post).toHaveBeenCalledWith(expect.stringContaining('/register'), expect.any(Object));
+    expect(result).toBe(true);
+  });
+  
+  // Test service discovery
+  test('ServiceDiscovery.findService should find a service by name', async () =&gt; {
+    // Arrange
+    const serviceName = 'test-service';
+    const mockService = {
+      name: serviceName,
+      url: 'http://localhost:3001',
+      status: 'ONLINE'
+    };
+    
+    // Mock the registry client's getServiceByName method
+    jest.spyOn(registryClient, 'getServiceByName').mockResolvedValue(mockService);
+    
+    // Act
+    const result = await ServiceDiscovery.findService(serviceName);
+    
+    // Assert
+    expect(registryClient.getServiceByName).toHaveBeenCalledWith(serviceName);
+    expect(result).toEqual(mockService);
+  });
+  
+  // Test calling another service
+  test('ServiceDiscovery.callService should call another service\'s API', async () =&gt; {
+    // Arrange
+    const serviceName = 'test-service';
+    const endpoint = '/api/test';
+    const mockService = {
+      name: serviceName,
+      url: 'http://localhost:3001',
+      status: 'ONLINE'
+    };
+    const mockResponse = { data: { result: 'success' } };
+    
+    // Mock the service discovery and axios
+    jest.spyOn(ServiceDiscovery, 'findService').mockResolvedValue(mockService);
+    (axios.get as jest.Mock).mockResolvedValue(mockResponse);
+    
+    // Act
+    const result = await ServiceDiscovery.callService(serviceName, endpoint);
+    
+    // Assert
+    expect(ServiceDiscovery.findService).toHaveBeenCalledWith(serviceName);
+    expect(axios.get).toHaveBeenCalledWith(`${mockService.url}${endpoint}`);
+    expect(result).toEqual(mockResponse.data);
+  });
+  
+  test('ServiceDiscovery.callService should return null if service not found', async () =&gt; {
+    // Arrange
+    const serviceName = 'nonexistent-service';
+    const endpoint = '/api/test';
+    
+    // Mock the service discovery to return null (service not found)
+    jest.spyOn(ServiceDiscovery, 'findService').mockResolvedValue(null);
+    
+    // Act
+    const result = await ServiceDiscovery.callService(serviceName, endpoint);
+    
+    // Assert
+    expect(ServiceDiscovery.findService).toHaveBeenCalledWith(serviceName);
+    expect(axios.get).not.toHaveBeenCalled();
+    expect(result).toBeNull();
+  });
+});
+</code></pre>
+<h2>Manual Testing</h2>
+<p>Besides automated tests, it's also important to manually test your service. Here are some tests you can run:</p>
+<h3>1. Start Your Service and Test Endpoints</h3>
+<p>Start your service:</p>
+<pre><code class="language-bash">cd services/your-service-name
+npm start
+</code></pre>
+<p>Use curl, Postman, or your browser to test your endpoints:</p>
+<pre><code class="language-bash"># Get all patrols
+curl http://localhost:3000/patrols
+
+# Create a new patrol
+curl -X POST http://localhost:3000/patrols \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;type&quot;: &quot;CAR&quot;, &quot;location&quot;: {&quot;latitude&quot;: 40.7128, &quot;longitude&quot;: -74.0060}, &quot;officerCount&quot;: 2, &quot;status&quot;: &quot;AVAILABLE&quot;}'
+
+# Get available patrols
+curl http://localhost:3000/patrols/available
+</code></pre>
+<h3>2. Validate OpenAPI Documentation</h3>
+<p>Open your API documentation in the browser:</p>
+<pre><code>http://localhost:3000/api-docs
+</code></pre>
+<p>Check that it accurately represents your service capabilities.</p>
+<h3>3. Test Registry Integration</h3>
+<p>Start the city registry service:</p>
+<pre><code class="language-bash">cd city-registry
+npm start
+</code></pre>
+<p>Then start your service and check if it registers:</p>
+<pre><code class="language-bash">cd services/your-service-name
+npm start
+</code></pre>
+<p>Check the registry to see if your service appears:</p>
+<pre><code class="language-bash">curl http://localhost:4000/services
+</code></pre>
+<h3>4. Test Integration with Other Services</h3>
+<p>If you have other city services running, test that they can discover and communicate with your service through the registry.</p>
+<h2>Bonus: Continuous Integration</h2>
+<p>For a more robust testing approach, consider setting up continuous integration:</p>
+<ol>
+<li>Create a <code>.github/workflows/ci.yml</code> file (if using GitHub Actions)</li>
+<li>Configure it to run your tests on each push or pull request</li>
+<li>Add steps to build and test your service</li>
+</ol>
+<p>This ensures that your tests are run automatically, catching issues early.</p>
+<h2>Conclusion</h2>
+<p>Congratulations! You've now built a full-featured city service following the API-first approach and validated it with comprehensive tests. Your service:</p>
+<ol>
+<li>Follows a well-defined OpenAPI contract</li>
+<li>Implements clean separation of concerns with models, repositories, services, and controllers</li>
+<li>Registers with the city service registry for discoverability</li>
+<li>Has been validated with automated tests to ensure it works correctly</li>
+</ol>
+<p>This provides a solid foundation for your service to operate reliably within the city services ecosystem. In the next exercise, we'll explore how to implement more advanced patterns for service-to-service communication.</p>
+
+    </main>
+</body>
+</html>

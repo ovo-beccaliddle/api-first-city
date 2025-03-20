@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  sample-service-db:
+    image: postgres:16
+    container_name: sample_service_db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.2'
+
+  sample-service:
+    image: city-services/services-sample
+    build:
+      context: ../../
+      dockerfile: services/sample/Dockerfile
+      args:
+        - PACKAGE_PATH=services/sample
+    container_name: sample_service
+    restart: always
+    ports:
+      - "${EXTERNAL_PORT:-3010}:${PORT:-3000}"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${PORT:-3000}
+      - SERVICE_REGISTRY_URL=${SERVICE_REGISTRY_URL:-http://service-registry:3000}
+      - IAM_URL=${IAM_URL:-http://iam-service:3000}
+      - PUBSUB_EMULATOR_HOST=${PUBSUB_EMULATOR_HOST:-pubsub-emulator:8085}
+      - PUBSUB_PROJECT_ID=${PUBSUB_PROJECT_ID:-city-services}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - DB_HOST=${DB_HOST:-sample-service-db}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_DATABASE=${DB_DATABASE:-sample_service}
+    volumes:
+      - ./src:/app/services/sample/src
+      - ./api:/app/services/sample/api
+      - ../../common:/app/common
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:${PORT:-3000}/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      service-registry:
+        condition: service_started
+      iam-service:
+        condition: service_started
+      sample-service-db:
+        condition: service_healthy
+    networks:
+      - frontend
+      - default
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.3'
+    # API Documentation is available at http://localhost:${EXTERNAL_PORT:-3010}/api-docs
+
+volumes:
+  sample_service_db_data:
+    name: sample_service_db_data
+
+networks:
+  frontend:
+    name: frontend
+    external: true
+  default:
+    name: city-services-network
+    external: true 

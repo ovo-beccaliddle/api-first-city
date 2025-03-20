@@ -1,0 +1,33 @@
+version: '3.8'
+
+# Include all infrastructure and service compose files
+include:
+  - ../infrastructure/api-gateway/docker-compose.yml
+  - ../infrastructure/iam/docker-compose.yml
+  - ../infrastructure/service-registry/docker-compose.yml
+  - ../infrastructure/event-bus/docker-compose.yml
+  - ../services/sample/docker-compose.yml
+
+# Dependencies across services
+
+
+# Define common network
+networks:
+  default:
+    name: city-services-network
+
+# Add a pre-build service that runs Turborepo build
+services:
+  turbo-builder:
+    image: node:20-alpine
+    volumes:
+      - ..:/app
+    working_dir: /app
+    command: sh -c "yarn install && yarn turbo run build"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    profiles:
+      - build 

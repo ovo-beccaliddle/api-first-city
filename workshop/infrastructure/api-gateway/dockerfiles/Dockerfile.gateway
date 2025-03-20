@@ -1,0 +1,14 @@
+FROM graviteeio/apim-gateway:4
+
+# Create directory for JDBC drivers
+USER root
+RUN mkdir -p /opt/graviteeio-gateway/plugins/ext/repository-jdbc
+
+# Copy the JDBC driver directly into the image
+COPY ./assets/postgresql-42.7.4.jar /opt/graviteeio-gateway/plugins/ext/repository-jdbc/
+
+# Set appropriate permissions
+RUN chmod 644 /opt/graviteeio-gateway/plugins/ext/repository-jdbc/postgresql-42.7.4.jar
+
+# Switch back to gravitee user
+USER graviteeio 

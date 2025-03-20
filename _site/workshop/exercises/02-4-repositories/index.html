@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        code {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 0.2rem 0.4rem;
+        }
+        nav {
+            background-color: #f6f8fa;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 3px;
+        }
+        nav a {
+            margin-right: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+    </nav>
+    <main>
+        <h1>Building Your Repository Layer</h1>
+<p>Now that you've defined your data models, it's time to create the repository layer. This layer handles all data access operations - think of it as the bridge between your business logic and your data storage.</p>
+<h2>What is a Repository?</h2>
+<p>The repository pattern is a design pattern that separates the logic for accessing data from your business logic. It provides a clean API for working with your data models, and hides the details of how data is stored and retrieved.</p>
+<p>In our case, we'll use a simple in-memory storage approach for the workshop, but in a real application, repositories would typically interact with databases, APIs, or other data sources.</p>
+<h2>Benefits of the Repository Pattern</h2>
+<ul>
+<li><strong>Separation of concerns</strong>: Your business logic doesn't need to know how data is stored</li>
+<li><strong>Testability</strong>: You can easily mock repositories for testing</li>
+<li><strong>Flexibility</strong>: You can change your data storage mechanism without affecting the rest of your code</li>
+<li><strong>Centralized data logic</strong>: All data access logic is in one place</li>
+</ul>
+<h2>Creating Your Repository</h2>
+<p>Let's implement a repository for one of your main resources. We'll use a simple in-memory approach for this workshop.</p>
+<h3>1. Create a Repository File</h3>
+<p>For each of your main resources, create a repository file in the <code>src/repositories</code> directory:</p>
+<pre><code class="language-bash">touch services/your-service-name/src/repositories/your-resource-repository.ts
+</code></pre>
+<p>For example, for a police service with patrols:</p>
+<pre><code class="language-bash">touch services/your-service-name/src/repositories/patrol-repository.ts
+</code></pre>
+<h3>2. Implement the Basic Repository Structure</h3>
+<p>Here's a template for a basic repository:</p>
+<pre><code class="language-typescript">import { v4 as uuidv4 } from 'uuid';
+import { YourResource, CreateYourResourceRequest, UpdateYourResourceRequest } from '../models/your-resource';
+
+// In-memory storage
+const resources: Record&lt;string, YourResource&gt; = {};
+
+export const YourResourceRepository = {
+  // Find all resources
+  findAll: (): YourResource[] =&gt; {
+    return Object.values(resources);
+  },
+  
+  // Find a resource by ID
+  findById: (id: string): YourResource | undefined =&gt; {
+    return resources[id];
+  },
+  
+  // Create a new resource
+  create: (resource: CreateYourResourceRequest): YourResource =&gt; {
+    const id = uuidv4();
+    const newResource = { ...resource, id };
+    resources[id] = newResource;
+    return newResource;
+  },
+  
+  // Update an existing resource
+  update: (id: string, resource: UpdateYourResourceRequest): YourResource | undefined =&gt; {
+    if (!resources[id]) return undefined;
+    
+    resources[id] = {
+      ...resources[id],
+      ...resource
+    };
+    
+    return resources[id];
+  },
+  
+  // Delete a resource
+  delete: (id: string): boolean =&gt; {
+    if (!resources[id]) return false;
+    
+    delete resources[id];
+    return true;
+  }
+};
+</code></pre>
+<h3>3. Implement a Real Repository</h3>
+<p>Let's implement a repository for a police patrol service as a concrete example:</p>
+<pre><code class="language-typescript">// src/repositories/patrol-repository.ts
+import { v4 as uuidv4 } from 'uuid';
+import { Patrol, CreatePatrolRequest, UpdatePatrolRequest, PatrolStatus } from '../models/patrol';
+
+// In-memory storage
+const patrols: Record&lt;string, Patrol&gt; = {};
+
+// Pre-populate with some example data
+const initializeData = () =&gt; {
+  const patrol1: Patrol = {
+    id: uuidv4(),
+    type: 'CAR',
+    location: { latitude: 40.7128, longitude: -74.0060 },
+    officerCount: 2,
+    status: PatrolStatus.AVAILABLE
+  };
+  
+  const patrol2: Patrol = {
+    id: uuidv4(),
+    type: 'BIKE',
+    location: { latitude: 40.7308, longitude: -73.9973 },
+    officerCount: 1,
+    status: PatrolStatus.AVAILABLE
+  };
+  
+  patrols[patrol1.id] = patrol1;
+  patrols[patrol2.id] = patrol2;
+};
+
+// Initialize data when the module is loaded
+initializeData();
+
+export const PatrolRepository = {
+  // Find all patrols
+  findAll: (): Patrol[] =&gt; {
+    return Object.values(patrols);
+  },
+  
+  // Find a patrol by ID
+  findById: (id: string): Patrol | undefined =&gt; {
+    return patrols[id];
+  },
+  
+  // Find patrols by status
+  findByStatus: (status: PatrolStatus): Patrol[] =&gt; {
+    return Object.values(patrols).filter(patrol =&gt; patrol.status === status);
+  },
+  
+  // Find available patrols
+  findAvailable: (): Patrol[] =&gt; {
+    return Object.values(patrols).filter(patrol =&gt; patrol.status === PatrolStatus.AVAILABLE);
+  },
+  
+  // Find the nearest patrol to a location
+  findNearest: (latitude: number, longitude: number): Patrol | undefined =&gt; {
+    const availablePatrols = Object.values(patrols).filter(
+      patrol =&gt; patrol.status === PatrolStatus.AVAILABLE
+    );
+    
+    if (availablePatrols.length === 0) return undefined;
+    
+    // Calculate distance for each patrol using the Haversine formula
+    return availablePatrols.reduce((nearest, patrol) =&gt; {
+      const distToNearest = calculateDistance(
+        latitude, longitude, 
+        nearest.location.latitude, nearest.location.longitude
+      );
+      
+      const distToPatrol = calculateDistance(
+        latitude, longitude, 
+        patrol.location.latitude, patrol.location.longitude
+      );
+      
+      return distToPatrol &lt; distToNearest ? patrol : nearest;
+    }, availablePatrols[0]);
+  },
+  
+  // Create a new patrol
+  create: (patrol: CreatePatrolRequest): Patrol =&gt; {
+    const id = uuidv4();
+    const newPatrol = { ...patrol, id };
+    patrols[id] = newPatrol;
+    return newPatrol;
+  },
+  
+  // Update an existing patrol
+  update: (id: string, patrol: UpdatePatrolRequest): Patrol | undefined =&gt; {
+    if (!patrols[id]) return undefined;
+    
+    patrols[id] = {
+      ...patrols[id],
+      ...patrol
+    };
+    
+    return patrols[id];
+  },
+  
+  // Delete a patrol
+  delete: (id: string): boolean =&gt; {
+    if (!patrols[id]) return false;
+    
+    delete patrols[id];
+    return true;
+  }
+};
+
+// Helper function to calculate distance between two points
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const d = R * c; // Distance in km
+  return d;
+}
+</code></pre>
+<h3>4. Example Repositories for Different Services</h3>
+<p>Let's look at some examples for different city services:</p>
+<h4>Example: Fire Truck Repository</h4>
+<pre><code class="language-typescript">// src/repositories/fire-truck-repository.ts
+import { v4 as uuidv4 } from 'uuid';
+import { FireTruck, TruckType } from '../models/fire-truck';
+
+// In-memory storage
+const trucks: Record&lt;string, FireTruck&gt; = {};
+
+// Pre-populate with some example data
+const initializeData = () =&gt; {
+  const truck1: FireTruck = {
+    id: uuidv4(),
+    type: TruckType.PUMPER,
+    location: { latitude: 40.7128, longitude: -74.0060 },
+    crewCount: 4,
+    waterCapacity: 2000,
+    status: 'AVAILABLE'
+  };
+  
+  const truck2: FireTruck = {
+    id: uuidv4(),
+    type: TruckType.LADDER,
+    location: { latitude: 40.7308, longitude: -73.9973 },
+    crewCount: 6,
+    waterCapacity: 1000,
+    status: 'AVAILABLE'
+  };
+  
+  trucks[truck1.id] = truck1;
+  trucks[truck2.id] = truck2;
+};
+
+// Initialize data when the module is loaded
+initializeData();
+
+export const FireTruckRepository = {
+  findAll: (): FireTruck[] =&gt; {
+    return Object.values(trucks);
+  },
+  
+  findById: (id: string): FireTruck | undefined =&gt; {
+    return trucks[id];
+  },
+  
+  findByStatus: (status: string): FireTruck[] =&gt; {
+    return Object.values(trucks).filter(truck =&gt; truck.status === status);
+  },
+  
+  findByType: (type: TruckType): FireTruck[] =&gt; {
+    return Object.values(trucks).filter(truck =&gt; truck.type === type);
+  },
+  
+  // Add other query methods as needed
+  
+  create: (truck: Omit&lt;FireTruck, 'id'&gt;): FireTruck =&gt; {
+    const id = uuidv4();
+    const newTruck = { ...truck, id };
+    trucks[id] = newTruck;
+    return newTruck;
+  },
+  
+  update: (id: string, truck: Partial&lt;Omit&lt;FireTruck, 'id'&gt;&gt;): FireTruck | undefined =&gt; {
+    if (!trucks[id]) return undefined;
+    
+    trucks[id] = {
+      ...trucks[id],
+      ...truck
+    };
+    
+    return trucks[id];
+  },
+  
+  delete: (id: string): boolean =&gt; {
+    if (!trucks[id]) return false;
+    
+    delete trucks[id];
+    return true;
+  }
+};
+</code></pre>
+<h4>Example: Power Plant Repository</h4>
+<pre><code class="language-typescript">// src/repositories/power-plant-repository.ts
+import { v4 as uuidv4 } from 'uuid';
+import { PowerPlant, EnergySource } from '../models/power-plant';
+
+// In-memory storage
+const plants: Record&lt;string, PowerPlant&gt; = {};
+
+// Pre-populate with some example data
+const initializeData = () =&gt; {
+  const plant1: PowerPlant = {
+    id: uuidv4(),
+    name: 'Downtown Nuclear',
+    location: { latitude: 40.7128, longitude: -74.0060 },
+    capacity: 1000,
+    currentOutput: 750,
+    source: EnergySource.NUCLEAR,
+    status: 'ONLINE',
+    efficiency: 95
+  };
+  
+  const plant2: PowerPlant = {
+    id: uuidv4(),
+    name: 'Westside Solar Farm',
+    location: { latitude: 40.7308, longitude: -73.9973 },
+    capacity: 500,
+    currentOutput: 300,
+    source: EnergySource.SOLAR,
+    status: 'ONLINE',
+    efficiency: 80
+  };
+  
+  plants[plant1.id] = plant1;
+  plants[plant2.id] = plant2;
+};
+
+// Initialize data when the module is loaded
+initializeData();
+
+export const PowerPlantRepository = {
+  findAll: (): PowerPlant[] =&gt; {
+    return Object.values(plants);
+  },
+  
+  findById: (id: string): PowerPlant | undefined =&gt; {
+    return plants[id];
+  },
+  
+  findByStatus: (status: string): PowerPlant[] =&gt; {
+    return Object.values(plants).filter(plant =&gt; plant.status === status);
+  },
+  
+  findBySource: (source: EnergySource): PowerPlant[] =&gt; {
+    return Object.values(plants).filter(plant =&gt; plant.source === source);
+  },
+  
+  getTotalCapacity: (): number =&gt; {
+    return Object.values(plants)
+      .filter(plant =&gt; plant.status === 'ONLINE')
+      .reduce((total, plant) =&gt; total + plant.capacity, 0);
+  },
+  
+  getCurrentOutput: (): number =&gt; {
+    return Object.values(plants)
+      .filter(plant =&gt; plant.status === 'ONLINE')
+      .reduce((total, plant) =&gt; total + plant.currentOutput, 0);
+  },
+  
+  create: (plant: Omit&lt;PowerPlant, 'id'&gt;): PowerPlant =&gt; {
+    const id = uuidv4();
+    const newPlant = { ...plant, id };
+    plants[id] = newPlant;
+    return newPlant;
+  },
+  
+  update: (id: string, plant: Partial&lt;Omit&lt;PowerPlant, 'id'&gt;&gt;): PowerPlant | undefined =&gt; {
+    if (!plants[id]) return undefined;
+    
+    plants[id] = {
+      ...plants[id],
+      ...plant
+    };
+    
+    return plants[id];
+  },
+  
+  delete: (id: string): boolean =&gt; {
+    if (!plants[id]) return false;
+    
+    delete plants[id];
+    return true;
+  }
+};
+</code></pre>
+<h3>5. Additional Repository Patterns</h3>
+<p>As your service grows, you might want to implement more sophisticated repository patterns:</p>
+<h4>Filtering and Pagination</h4>
+<pre><code class="language-typescript">export const PatrolRepository = {
+  // ... other methods
+  
+  // Find patrols with filtering and pagination
+  findWithFilters: (options: {
+    status?: PatrolStatus;
+    type?: PatrolType;
+    limit?: number;
+    offset?: number;
+  }): { data: Patrol[]; total: number } =&gt; {
+    let result = Object.values(patrols);
+    
+    // Apply filters
+    if (options.status) {
+      result = result.filter(patrol =&gt; patrol.status === options.status);
+    }
+    
+    if (options.type) {
+      result = result.filter(patrol =&gt; patrol.type === options.type);
+    }
+    
+    const total = result.length;
+    
+    // Apply pagination
+    if (options.limit !== undefined &amp;&amp; options.offset !== undefined) {
+      result = result.slice(options.offset, options.offset + options.limit);
+    }
+    
+    return { data: result, total };
+  }
+};
+</code></pre>
+<h4>Searching</h4>
+<pre><code class="language-typescript">export const PatrolRepository = {
+  // ... other methods
+  
+  // Search patrols
+  search: (query: string): Patrol[] =&gt; {
+    const lowercaseQuery = query.toLowerCase();
+    
+    return Object.values(patrols).filter(patrol =&gt; 
+      patrol.id.toLowerCase().includes(lowercaseQuery) || 
+      patrol.type.toLowerCase().includes(lowercaseQuery) ||
+      (patrol.activeCall &amp;&amp; patrol.activeCall.toLowerCase().includes(lowercaseQuery))
+    );
+  }
+};
+</code></pre>
+<h2>Next Steps</h2>
+<p>You've now created the repository layer for your service, which handles all data operations. Next, let's build the service layer, which will contain your business logic.</p>
+<p>Head over to <a href="./02-5-services">Creating Your Service Layer</a></p>
+
+    </main>
+</body>
+</html>
